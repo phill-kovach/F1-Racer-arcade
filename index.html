@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>F1 Arcade Racer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700;900&display=swap');
+
+        :root {
+            --background-color: #1a1a1a;
+            --off-track-color: #3a5f3a;
+            --primary-red: #e10600;
+            --text-color: #ffffff;
+            --dark-grey: #333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--background-color);
+            font-family: 'Titillium Web', sans-serif;
+            color: var(--text-color);
+            overscroll-behavior: none;
+            touch-action: none;
+        }
+
+        .game-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #game-view {
+            position: relative;
+            background-color: var(--off-track-color);
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI Elements */
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5vmin;
+            box-sizing: border-box;
+        }
+        
+        #countdown-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            display: none;
+            text-align: center;
+            text-shadow: 0 0 20px black;
+        }
+
+        #countdown-timer {
+            font-size: 25vmin;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #track-name {
+            font-size: 5vmin;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: -5vmin;
+        }
+
+        #pause-button {
+            position: absolute;
+            top: 1.5vmin;
+            left: 1.5vmin;
+            width: 8vmin;
+            height: 8vmin;
+            background-color: rgba(20, 20, 20, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5vmin;
+            pointer-events: auto;
+            z-index: 150;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #pause-button svg {
+            width: 60%;
+            height: 60%;
+            fill: white;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: flex-end;
+            font-size: 3.5vmin;
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(0,0,0,0.7);
+        }
+
+        .hud-right {
+            background-color: rgba(20, 20, 20, 0.7);
+            padding: 1.5vmin 2.5vmin;
+            border-radius: 1.5vmin;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            text-align: right;
+        }
+        
+        #tireWear {
+            width: 25vmin;
+            height: 1.5vmin;
+            background-color: #555;
+            border-radius: 0.75vmin;
+            overflow: hidden;
+            margin-top: 1vmin;
+            border: 1px solid rgba(0,0,0,0.5);
+        }
+
+        #tireWearBar {
+            height: 100%;
+            width: 100%;
+            background-color: #4CAF50;
+            border-radius: 0.75vmin;
+            transition: width 0.2s, background-color 0.2s;
+        }
+
+        #boxBoxMessage {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8vmin;
+            font-weight: 900;
+            color: #ffdd00;
+            text-shadow: 0 0 10px #000;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        /* Controls Panel */
+        #controls-panel {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #222;
+        }
+
+        .control-button {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 0.4vmin solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 4vmin;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation; /* Helps prevent accidental browser gestures */
+        }
+        
+        .control-button.active {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        #dpad {
+            width: 35vmin;
+            height: 15vmin;
+            position: relative;
+        }
+
+        .dpad-arrow {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 0.4vmin solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            touch-action: manipulation;
+        }
+        .dpad-arrow.active {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        #dpad-left, #dpad-right { width: 40%; height: 100%; top: 0; }
+        #dpad-left { left: 0; border-radius: 2vmin 0 0 2vmin; }
+        #dpad-right { right: 0; border-radius: 0 2vmin 2vmin 0; }
+        .dpad-arrow svg { fill: white; width: 60%; height: 60%; }
+
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 5vmin;
+        }
+
+        /* Menus */
+        .menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 1000;
+        }
+
+        .menu-title {
+            font-size: 8vmin;
+            font-weight: 900;
+            margin-bottom: 4vh;
+            text-transform: uppercase;
+            letter-spacing: 0.2vmin;
+            border-bottom: 0.5vmin solid var(--primary-red);
+            padding-bottom: 2vh;
+        }
+
+        .menu-subtitle {
+            font-size: 6vmin;
+            font-weight: 700;
+            margin-bottom: 3vh;
+        }
+
+        .menu-button {
+            background-color: var(--primary-red);
+            color: white;
+            border: none;
+            padding: 2vh 4vw;
+            margin: 1.5vh 0;
+            font-size: 4vmin;
+            font-weight: 700;
+            border-radius: 1vmin;
+            cursor: pointer;
+            min-width: 50vw;
+            text-align: center;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .menu-button:active {
+            transform: scale(0.95);
+        }
+        
+        .menu-button.secondary {
+            background-color: var(--dark-grey);
+        }
+
+        .team-grid {
+            display: grid;
+            gap: 2vmin;
+            padding: 2vmin;
+            width: 90vw;
+            max-width: 800px;
+        }
+        .team-card {
+            border: 0.5vmin solid var(--dark-grey);
+            border-radius: 2vmin;
+            padding: 2vmin;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .team-card:active {
+            transform: scale(0.97);
+            border-color: var(--primary-red);
+        }
+        
+        .team-color {
+            width: 100%;
+            height: 10vmin;
+            border-radius: 1vmin;
+            margin-bottom: 1.5vmin;
+        }
+        
+        .team-name {
+            font-size: 3.5vmin;
+            font-weight: 700;
+            margin-bottom: 1vmin;
+        }
+        
+        .team-stats {
+            font-size: 2.5vmin;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        .team-stats li { margin-bottom: 0.5vmin; }
+        .team-stats .strength { color: #4CAF50; }
+        .team-stats .weakness { color: #f44336; }
+
+        /* --- LANDSCAPE STYLES --- */
+        @media (orientation: landscape) {
+            .game-container { flex-direction: row; }
+            #game-view { width: 100vw; height: 100vh; }
+            #controls-panel { display: none; } /* Hide the bottom panel */
+            
+            #dpad, .action-buttons .control-button { position: absolute; }
+            .team-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        }
+
+        /* --- PORTRAIT STYLES --- */
+        @media (orientation: portrait) {
+            .game-container { flex-direction: column; }
+            #game-view { width: 100vw; height: 60vh; }
+            #controls-panel { width: 100vw; height: 40vh; }
+            
+            #dpad, .action-buttons .control-button { position: relative; }
+            #accelerate { width: 22vmin; height: 22vmin; }
+            #brake { width: 16vmin; height: 16vmin; }
+            .team-grid { grid-template-columns: 1fr 1fr; }
+            .menu-button { min-width: 70vw; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="game-view">
+            <canvas id="gameCanvas"></canvas>
+            <div class="ui-overlay">
+                <div id="countdown-container">
+                    <div id="countdown-timer">5</div>
+                    <div id="track-name"></div>
+                </div>
+                <div id="pause-button">
+                    <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </div>
+                <div class="hud">
+                    <div class="hud-right">
+                        <div>POS: <span id="position">1/10</span></div>
+                        <div>LAP: <span id="lap">1/12</span></div>
+                        <div>SPEED: <span id="speed">0</span> KPH</div>
+                        <div>TIRES</div>
+                        <div id="tireWear"><div id="tireWearBar"></div></div>
+                    </div>
+                </div>
+                <div id="boxBoxMessage">BOX BOX</div>
+            </div>
+        </div>
+        <div id="controls-panel">
+            <div id="dpad">
+                <div class="dpad-arrow" id="dpad-left">
+                    <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                </div>
+                <div class="dpad-arrow" id="dpad-right">
+                    <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <div class="control-button" id="brake">
+                    <svg viewBox="0 0 24 24" width="60%" height="60%" fill="white"><path d="M12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 8H7v-2h4v2zm4 0h-2v-2h2v2z"/></svg>
+                </div>
+                <div class="control-button" id="accelerate">
+                    <svg viewBox="0 0 24 24" width="60%" height="60%" fill="white"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menus -->
+        <div class="menu" id="track-selection-menu">
+            <h1 class="menu-title">SELECT TRACK</h1>
+            <div id="track-grid"></div>
+        </div>
+        <div class="menu" id="start-menu" style="display: none;">
+            <div id="team-selection">
+                <h1 class="menu-title">SELECT YOUR TEAM</h1>
+                <div class="team-grid"></div>
+            </div>
+        </div>
+        <div class="menu" id="pause-menu" style="display: none;">
+            <h1 class="menu-title">PAUSED</h1>
+            <button class="menu-button" id="resume-button">RESUME</button>
+            <button class="menu-button secondary" id="options-button">OPTIONS</button>
+            <button class="menu-button secondary" id="restart-button">RESTART RACE</button>
+        </div>
+        <div class="menu" id="options-menu" style="display: none;">
+            <h1 class="menu-title">OPTIONS</h1>
+            <p style="font-size: 3vmin; margin-bottom: 3vh;">Control layout is only editable in landscape mode.</p>
+            <div class="slider-container">
+                <label for="opacity-slider">Controls Opacity</label>
+                <input type="range" id="opacity-slider" min="0.1" max="1" step="0.05">
+            </div>
+            <div class="slider-container">
+                <label for="size-slider">Controls Size</label>
+                <input type="range" id="size-slider" min="0.5" max="1.5" step="0.05">
+            </div>
+            <button class="menu-button" id="edit-position-button">EDIT POSITION</button>
+            <button class="menu-button secondary" id="options-back-button">BACK</button>
+        </div>
+        <div class="menu" id="race-over-menu" style="display: none;">
+            <h1 class="menu-title">RACE FINISHED</h1>
+            <h2 class="menu-subtitle" id="final-position"></h2>
+            <button class="menu-button" id="race-over-restart-button">RESTART RACE</button>
+            <button class="menu-button secondary" id="main-menu-button">MAIN MENU</button>
+        </div>
+        <div id="controls-editor" style="display: none;"></div>
+    </div>
+
+    <script>
+        // --- Polyfill for requestAnimationFrame ---
+        window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) { window.setTimeout(callback, 1000 / 60); };
+
+        // --- DOM Elements ---
+        const gameView = document.getElementById('game-view');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const countdownContainer = document.getElementById('countdown-container');
+        const countdownTimerEl = document.getElementById('countdown-timer');
+        const trackNameEl = document.getElementById('track-name');
+        const positionEl = document.getElementById('position');
+        const lapEl = document.getElementById('lap');
+        const speedEl = document.getElementById('speed');
+        const tireWearBar = document.getElementById('tireWearBar');
+        const boxBoxMessage = document.getElementById('boxBoxMessage');
+        const trackSelectionMenu = document.getElementById('track-selection-menu');
+        const startMenu = document.getElementById('start-menu');
+        const pauseMenu = document.getElementById('pause-menu');
+        const optionsMenu = document.getElementById('options-menu');
+        const raceOverMenu = document.getElementById('race-over-menu');
+        const pauseButton = document.getElementById('pause-button');
+        const resumeButton = document.getElementById('resume-button');
+        const optionsButton = document.getElementById('options-button');
+        const restartButton = document.getElementById('restart-button');
+        const optionsBackButton = document.getElementById('options-back-button');
+        const editPositionButton = document.getElementById('edit-position-button');
+        const finalPositionEl = document.getElementById('final-position');
+        const raceOverRestartButton = document.getElementById('race-over-restart-button');
+        const mainMenuButton = document.getElementById('main-menu-button');
+        const dpad = document.getElementById('dpad');
+        const dpadLeft = document.getElementById('dpad-left');
+        const dpadRight = document.getElementById('dpad-right');
+        const accelerateButton = document.getElementById('accelerate');
+        const brakeButton = document.getElementById('brake');
+        const controlsEditor = document.getElementById('controls-editor');
+        const opacitySlider = document.getElementById('opacity-slider');
+        const sizeSlider = document.getElementById('size-slider');
+
+        // --- Game State ---
+        let gameState = 'MENU'; // MENU, COUNTDOWN, RACING, PAUSED, OPTIONS, RACE_OVER
+        let playerTeam = null;
+        let cars = [];
+        let playerCar;
+        let selectedTrackIndex = -1;
+        let lastSelectedTrackIndex = -1;
+        const TOTAL_LAPS = 12;
+        const AI_COUNT = 9;
+
+        // --- Teams Data ---
+        const TEAMS = {
+            CRIMSON_STALLIONS: { name: "Crimson Stallions", color: "#DC0000", stats: { topSpeed: 1.1, acceleration: 0.95, handling: 0.9, tireWear: 1.1 }, strengths: ["Highest top speed"], weaknesses: ["Worse handling"] },
+            AZURE_PREDATORS: { name: "Azure Predators", color: "#0600EF", stats: { topSpeed: 0.98, acceleration: 1.1, handling: 1.05, tireWear: 0.95 }, strengths: ["Best acceleration"], weaknesses: ["Lower top speed"] },
+            SILVER_ARROWS: { name: "Silver Arrows", color: "#00D2BE", stats: { topSpeed: 1.0, acceleration: 1.0, handling: 1.0, tireWear: 0.9 }, strengths: ["Balanced performance"], weaknesses: ["No single strength"] },
+            EMERALD_VIPERS: { name: "Emerald Vipers", color: "#006F62", stats: { topSpeed: 0.95, acceleration: 1.02, handling: 1.1, tireWear: 0.98 }, strengths: ["Superb handling"], weaknesses: ["Lacks straight speed"] },
+            ORANGE_PHANTOMS: { name: "Orange Phantoms", color: "#FF8700", stats: { topSpeed: 1.05, acceleration: 1.05, handling: 0.95, tireWear: 1.0 }, strengths: ["Fast on straights"], weaknesses: ["Average handling"] }
+        };
+
+        // --- TRACK DATA ---
+        let trackPath, pitLanePath, pitBoxPosition, startLine, checkpoints, trackWidth, pitLaneWidth;
+        const TRACKS = [
+            { // Grand Prix Circuit
+                name: "Grand Prix Circuit",
+                width: 375,
+                pitWidth: 75,
+                path: [ {x: 2250, y: 7500}, {x: 6750, y: 7500}, {x: 7500, y: 6750}, {x: 7500, y: 3000}, {x: 6750, y: 2250}, {x: 3000, y: 2250}, {x: 2250, y: 3000}, {x: 3000, y: 3750}, {x: 3000, y: 5250}, {x: 2250, y: 6000}, {x: 2250, y: 7500} ],
+                pitLane: [ {x: 2250, y: 7650}, {x: 6750, y: 7650} ],
+                pitBox: {x: 4500, y: 7650},
+                startLine: {x: 4500, y: 7500},
+                startPos: { x: 4500, y: 7500 },
+                startAngle: 0
+            },
+            { // Alpine Circuit (Reworked)
+                name: "Alpine Circuit",
+                width: 400,
+                pitWidth: 80,
+                path: [ {x: 1000, y: 5000}, {x: 1000, y: 2000}, {x: 1500, y: 1500}, {x: 3500, y: 1500}, {x: 4000, y: 2000}, {x: 4000, y: 3000}, {x: 3500, y: 3500}, {x: 2500, y: 3500}, {x: 2000, y: 4000}, {x: 2000, y: 5000}, {x: 1000, y: 5000} ],
+                pitLane: [ {x: 900, y: 5000}, {x: 900, y: 2000} ],
+                pitBox: {x: 900, y: 3500},
+                startLine: {x: 1000, y: 3500},
+                startPos: { x: 1000, y: 3500 },
+                startAngle: -Math.PI / 2
+            },
+            { // Coastal Circuit (New)
+                name: "Coastal Circuit",
+                width: 450,
+                pitWidth: 80,
+                path: [ {x: 1000, y: 1000}, {x: 5000, y: 1000}, {x: 5500, y: 1500}, {x: 5500, y: 4500}, {x: 5000, y: 5000}, {x: 2000, y: 5000}, {x: 1500, y: 4500}, {x: 1500, y: 3500}, {x: 2000, y: 3000}, {x: 3000, y: 3000}, {x: 3500, y: 2500}, {x: 3500, y: 2000}, {x: 2500, y: 1500}, {x: 1000, y: 1500}, {x: 1000, y: 1000} ],
+                pitLane: [ {x: 1000, y: 900}, {x: 5000, y: 900} ],
+                pitBox: {x: 3000, y: 900},
+                startLine: {x: 3000, y: 1000},
+                startPos: { x: 3000, y: 1000 },
+                startAngle: 0
+            },
+            { // Desert Loop (New)
+                name: "Desert Loop",
+                width: 500,
+                pitWidth: 100,
+                path: [ {x: 1000, y: 3000}, {x: 4000, y: 1000}, {x: 7000, y: 3000}, {x: 6000, y: 5000}, {x: 4000, y: 6000}, {x: 2000, y: 5000}, {x: 1000, y: 3000} ],
+                pitLane: [ {x: 1000, y: 2900}, {x: 4000, y: 900} ],
+                pitBox: {x: 2500, y: 1900},
+                startLine: {x: 1100, y: 3000},
+                startPos: { x: 1100, y: 3000 },
+                startAngle: 0
+            }
+        ];
+        
+        const controls = { left: false, right: false, accelerate: false, brake: false };
+        let controlConfig = {
+            dpad: { x: 15, y: 75, w: 25, h: 12 },
+            accelerate: { x: 85, y: 78, size: 14 },
+            brake: { x: 70, y: 85, size: 10 },
+            opacity: 0.5,
+            scale: 1.0
+        };
+
+        const camera = { x: 0, y: 0, zoom: 0.2 };
+
+        class Car {
+            constructor(isPlayer, team, startPos, startAngle) {
+                this.isPlayer = isPlayer;
+                this.team = team;
+                this.x = startPos.x;
+                this.y = startPos.y;
+                this.angle = startAngle;
+                this.speed = 0;
+                this.steer = 0;
+                this.width = 40;
+                this.height = 80;
+                this.stats = team.stats;
+                this.maxSpeed = 25 * this.stats.topSpeed;
+                this.acceleration = 0.15 * this.stats.acceleration; // Reduced acceleration
+                this.braking = 0.5;
+                this.handling = 0.03 * this.stats.handling; // Reduced handling
+                this.friction = 0.985; 
+                this.lap = 0;
+                this.checkpoint = 0;
+                this.rank = 0;
+                this.isPitting = false;
+                this.tireStrength = 1.0;
+                this.tireWearRate = 0.0001 * this.stats.tireWear;
+                if (!isPlayer) {
+                    this.aiTargetNode = 1;
+                    this.aiSteerRandomness = (Math.random() - 0.5) * 0.1;
+                }
+            }
+
+            update() {
+                const grip = 0.5 + (this.tireStrength * 0.5);
+                if (this.speed > 1 && this.isPlayer) {
+                    this.tireStrength -= this.tireWearRate * (Math.abs(this.steer) + 0.1);
+                    this.tireStrength = Math.max(0, this.tireStrength);
+                }
+                
+                if (this.isPitting && this.speed < 1) {
+                    this.tireStrength += 0.01;
+                    if (this.tireStrength >= 1.0) {
+                        this.tireStrength = 1.0;
+                        this.isPitting = false;
+                    }
+                }
+
+                if (gameState !== 'RACING') {
+                    this.speed *= this.friction;
+                } else if (this.isPlayer) {
+                    if (controls.accelerate && !this.isPitting) this.speed += this.acceleration;
+                    if (controls.brake) this.speed -= this.braking;
+                    this.steer = 0;
+                    if (controls.left) this.steer = -1;
+                    if (controls.right) this.steer = 1;
+                } else {
+                    this.updateAI();
+                }
+
+                this.speed = Math.max(0, Math.min(this.maxSpeed, this.speed));
+                this.speed *= this.friction;
+
+                if (this.speed > 0.1) {
+                    const turnSpeed = this.steer * this.handling * grip * (1 - this.speed / (this.maxSpeed * 1.5));
+                    this.angle += turnSpeed;
+                }
+
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                this.handleTrackCollisions();
+                this.updateCheckpoints();
+            }
+            
+            updateAI() {
+                if (this.isPitting && this.tireStrength < 0.95) { this.speed = 0; return; }
+                if (this.isPitting && this.tireStrength >= 0.95) { this.isPitting = false; }
+
+                if (this.lap > 2 && this.tireStrength < 0.3 && !this.isPitting) {
+                    const target = pitBoxPosition;
+                    const dx = target.x - this.x;
+                    const dy = target.y - this.y;
+                    const targetAngle = Math.atan2(dy, dx);
+                    let angleDiff = targetAngle - this.angle;
+                    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+                    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                    this.steer = Math.sign(angleDiff) * 0.8;
+                    this.speed += this.acceleration * 0.7;
+                    if (Math.hypot(dx, dy) < 100) { this.isPitting = true; }
+                    return;
+                }
+
+                const target = trackPath[this.aiTargetNode];
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                if (Math.hypot(dx, dy) < 450) { this.aiTargetNode = (this.aiTargetNode + 1) % trackPath.length; }
+
+                const targetAngle = Math.atan2(dy, dx);
+                let angleDiff = targetAngle - this.angle;
+                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                this.steer = Math.sign(angleDiff) * 0.8 + this.aiSteerRandomness;
+                
+                const nextNode = trackPath[(this.aiTargetNode + 1) % trackPath.length];
+                const nextDx = nextNode.x - target.x;
+                const nextDy = nextNode.y - target.y;
+                const nextTargetAngle = Math.atan2(nextDy, nextDx);
+                let cornerAngleDiff = Math.abs(targetAngle - nextTargetAngle);
+                const desiredSpeed = this.maxSpeed * (1 - Math.min(cornerAngleDiff, 1.0) * 0.6);
+
+                if (this.speed > desiredSpeed) { this.speed -= this.braking * 0.5; }
+                else { this.speed += this.acceleration * 0.8; }
+            }
+            
+            handleTrackCollisions() {
+                let minDist = Infinity;
+                let onTrack = false;
+                
+                for (let i = 0; i < trackPath.length -1; i++) {
+                    const p1 = trackPath[i];
+                    const p2 = trackPath[i+1];
+                    const dist = this.distToSegment({x: this.x, y: this.y}, p1, p2);
+                    if (dist < minDist) minDist = dist;
+                }
+                
+                if (minDist < trackWidth / 2) { onTrack = true; }
+                else if (minDist < trackWidth / 2 + 50) { this.speed *= 0.9; onTrack = true; }
+                
+                const pitDist = this.distToSegment({x: this.x, y: this.y}, pitLanePath[0], pitLanePath[1]);
+                if (pitDist < pitLaneWidth / 2) { onTrack = true; }
+                
+                if (this.isPlayer && pitDist < pitLaneWidth / 2) {
+                    if (Math.hypot(this.x - pitBoxPosition.x, this.y - pitBoxPosition.y) < 60) {
+                        this.isPitting = true;
+                    }
+                }
+                if (!onTrack) { this.speed *= 0.5; }
+            }
+
+            distToSegment(p, v, w) {
+                const l2 = (v.x - w.x)**2 + (v.y - w.y)**2;
+                if (l2 == 0) return Math.hypot(p.x - v.x, p.y - v.y);
+                let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+                return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+            }
+            
+            updateCheckpoints() {
+                const nextCheckpointIndex = (this.checkpoint + 1) % checkpoints.length;
+                const nextCheckpoint = checkpoints[nextCheckpointIndex];
+                if (Math.hypot(this.x - nextCheckpoint.x, this.y - nextCheckpoint.y) < trackWidth * 1.5) {
+                    if (nextCheckpointIndex === 0 && this.checkpoint === checkpoints.length - 1) {
+                        this.lap++;
+                    }
+                    this.checkpoint = nextCheckpointIndex;
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                ctx.fillStyle = this.team.color;
+                ctx.beginPath();
+                ctx.moveTo(this.height / 2, 0); // Nose
+                ctx.lineTo(-this.height / 3, -this.width / 2); // Back left
+                ctx.lineTo(-this.height / 3, this.width / 2); // Back right
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#111';
+                ctx.beginPath();
+                ctx.moveTo(this.height / 4, 0);
+                ctx.lineTo(-this.height / 5, -this.width / 4);
+                ctx.lineTo(-this.height / 5, this.width / 4);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        function gameLoop() {
+            if (gameState === 'RACING') { update(); }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            if (playerCar && playerCar.lap >= TOTAL_LAPS) { endRace(); return; }
+            cars.forEach(car => car.update());
+            cars.sort((a, b) => (b.lap * checkpoints.length + b.checkpoint) - (a.lap * checkpoints.length + a.checkpoint));
+            cars.forEach((car, index) => { car.rank = index + 1; });
+            updateUI();
+        }
+
+        function endRace() {
+            gameState = 'RACE_OVER';
+            const s = (p) => { return p === 1 ? 'st' : p === 2 ? 'nd' : p === 3 ? 'rd' : 'th'; };
+            finalPositionEl.textContent = `You finished ${playerCar.rank}${s(playerCar.rank)}!`;
+            raceOverMenu.style.display = 'flex';
+        }
+
+        function draw() {
+            const logicalWidth = canvas.clientWidth;
+            const logicalHeight = canvas.clientHeight;
+            ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+            if (playerCar) {
+                camera.x = playerCar.x - logicalWidth / (2 * camera.zoom);
+                camera.y = playerCar.y - logicalHeight / (2 * camera.zoom);
+            }
+            ctx.save();
+            ctx.scale(camera.zoom, camera.zoom);
+            ctx.translate(-camera.x, -camera.y);
+            drawTrack();
+            cars.forEach(car => { car.draw(); });
+            ctx.restore();
+        }
+        
+        function drawTrack() {
+            if (!trackPath) return; // Prevent error before game starts
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            const borderWidth = 15;
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = trackWidth + borderWidth * 2;
+            ctx.beginPath();
+            ctx.moveTo(trackPath[0].x, trackPath[0].y);
+            for(let i = 1; i < trackPath.length; i++) ctx.lineTo(trackPath[i].x, trackPath[i].y);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = trackWidth;
+            ctx.stroke();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 5;
+            ctx.setLineDash([25, 25]);
+            ctx.stroke();
+            ctx.strokeStyle = '#e10600';
+            ctx.lineDashOffset = 25;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.lineDashOffset = 0;
+            ctx.strokeStyle = '#aaaaaa';
+            ctx.lineWidth = pitLaneWidth;
+            ctx.beginPath();
+            ctx.moveTo(pitLanePath[0].x, pitLanePath[0].y);
+            ctx.lineTo(pitLanePath[1].x, pitLanePath[1].y);
+            ctx.stroke();
+            ctx.fillStyle = playerTeam ? playerTeam.color : '#555';
+            ctx.fillRect(pitBoxPosition.x - 30, pitBoxPosition.y - 60, 60, 120);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(pitBoxPosition.x - 30, pitBoxPosition.y - 60, 60, 120);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 15;
+            ctx.beginPath();
+            const isVerticalStart = Math.abs(Math.cos(playerCar.angle)) < 0.5;
+            if(isVerticalStart) {
+                ctx.moveTo(startLine.x, startLine.y - trackWidth/2);
+                ctx.lineTo(startLine.x, startLine.y + trackWidth/2);
+            } else {
+                ctx.moveTo(startLine.x - trackWidth/2, startLine.y);
+                ctx.lineTo(startLine.x + trackWidth/2, startLine.y);
+            }
+            ctx.stroke();
+        }
+
+        function updateUI() {
+            if (!playerCar) return;
+            positionEl.textContent = `${playerCar.rank}/${cars.length}`;
+            lapEl.textContent = `${Math.min(TOTAL_LAPS, playerCar.lap + 1)}/${TOTAL_LAPS}`;
+            speedEl.textContent = Math.round(playerCar.speed * 15);
+            const tirePercentage = playerCar.tireStrength * 100;
+            tireWearBar.style.width = `${tirePercentage}%`;
+            if (tirePercentage > 60) tireWearBar.style.backgroundColor = '#4CAF50';
+            else if (tirePercentage > 30) tireWearBar.style.backgroundColor = '#FFC107';
+            else tireWearBar.style.backgroundColor = '#F44336';
+            if (playerCar.tireStrength < 0.25 && playerCar.lap >= 0) { boxBoxMessage.style.opacity = 1; }
+            else { boxBoxMessage.style.opacity = 0; }
+        }
+        
+        function init() {
+            handleOrientationChange();
+            populateTrackSelection();
+            populateTeamSelection();
+            loadControlConfig();
+            setupEventListeners();
+            gameLoop();
+        }
+        
+        function setupCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = gameView.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        function loadTrack(trackData) {
+            trackPath = trackData.path;
+            pitLanePath = trackData.pitLane;
+            pitBoxPosition = trackData.pitBox;
+            startLine = trackData.startLine;
+            trackWidth = trackData.width;
+            pitLaneWidth = trackData.pitWidth;
+            checkpoints = trackPath.map(p => ({...p}));
+            return { startPos: trackData.startPos, startAngle: trackData.startAngle };
+        }
+
+        function startGame(teamKey) {
+            playerTeam = TEAMS[teamKey];
+            
+            let trackIndex = selectedTrackIndex;
+            if (trackIndex === -1) {
+                trackIndex = Math.floor(Math.random() * TRACKS.length);
+            }
+            lastSelectedTrackIndex = trackIndex;
+            const selectedTrack = TRACKS[trackIndex];
+            const { startPos, startAngle } = loadTrack(selectedTrack);
+            
+            cars = [];
+            
+            playerCar = new Car(true, playerTeam, startPos, startAngle);
+            cars.push(playerCar);
+            
+            const teamKeys = Object.keys(TEAMS);
+            for (let i = 0; i < AI_COUNT; i++) {
+                const team = TEAMS[teamKeys[i % teamKeys.length]];
+                const isVerticalStart = Math.abs(Math.cos(startAngle)) < 0.5;
+                const gridPos = {
+                    x: startPos.x + (isVerticalStart ? (i % 2 === 0 ? -60 : 60) : Math.floor((i+2)/2) * -120),
+                    y: startPos.y + (isVerticalStart ? Math.floor((i+2)/2) * 120 : (i % 2 === 0 ? -60 : 60))
+                };
+                cars.push(new Car(false, team, gridPos, startAngle));
+            }
+            
+            startMenu.style.display = 'none';
+            raceOverMenu.style.display = 'none';
+            startCountdown(selectedTrack.name);
+        }
+
+        function startCountdown(trackName) {
+            let count = 5;
+            trackNameEl.textContent = trackName;
+            countdownTimerEl.textContent = count;
+            countdownContainer.style.display = 'block';
+            gameState = 'COUNTDOWN';
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) { countdownTimerEl.textContent = count; }
+                else {
+                    clearInterval(countdownInterval);
+                    countdownTimerEl.textContent = 'GO!';
+                    setTimeout(() => {
+                        countdownContainer.style.display = 'none';
+                        gameState = 'RACING';
+                    }, 500);
+                }
+            }, 1000);
+        }
+        
+        function restartGame() {
+            if (playerTeam) {
+                startGame(Object.keys(TEAMS).find(key => TEAMS[key] === playerTeam));
+                pauseMenu.style.display = 'none';
+                optionsMenu.style.display = 'none';
+            }
+        }
+
+        function populateTrackSelection() {
+            const grid = document.getElementById('track-grid');
+            grid.innerHTML = '';
+            TRACKS.forEach((track, index) => {
+                const button = document.createElement('button');
+                button.className = 'menu-button';
+                button.textContent = track.name;
+                button.onclick = () => {
+                    selectedTrackIndex = index;
+                    trackSelectionMenu.style.display = 'none';
+                    startMenu.style.display = 'flex';
+                };
+                grid.appendChild(button);
+            });
+            const randomButton = document.createElement('button');
+            randomButton.className = 'menu-button secondary';
+            randomButton.textContent = 'Random Track';
+            randomButton.onclick = () => {
+                selectedTrackIndex = -1; // -1 signifies random
+                trackSelectionMenu.style.display = 'none';
+                startMenu.style.display = 'flex';
+            };
+            grid.appendChild(randomButton);
+        }
+
+        function populateTeamSelection() {
+            const grid = document.querySelector('.team-grid');
+            grid.innerHTML = '';
+            for (const key in TEAMS) {
+                const team = TEAMS[key];
+                const card = document.createElement('div');
+                card.className = 'team-card';
+                card.onclick = () => startGame(key);
+                let strengthsHTML = team.strengths.map(s => `<li class="strength">+ ${s}</li>`).join('');
+                let weaknessesHTML = team.weaknesses.map(w => `<li class="weakness">- ${w}</li>`).join('');
+                card.innerHTML = `<div class="team-color" style="background-color: ${team.color};"></div><div class="team-name">${team.name}</div><ul class="team-stats">${strengthsHTML}${weaknessesHTML}</ul>`;
+                grid.appendChild(card);
+            }
+        }
+
+        function handleOrientationChange() {
+            setTimeout(() => {
+                setupCanvas();
+                applyControlConfig();
+            }, 100); 
+        }
+
+        function setupEventListeners() {
+            window.addEventListener('resize', handleOrientationChange);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && gameState === 'RACING') {
+                    gameState = 'PAUSED';
+                    pauseMenu.style.display = 'flex';
+                }
+            });
+            pauseButton.addEventListener('click', () => {
+                if (gameState === 'RACING') {
+                    gameState = 'PAUSED';
+                    pauseMenu.style.display = 'flex';
+                }
+            });
+            resumeButton.addEventListener('click', () => {
+                pauseMenu.style.display = 'none';
+                gameState = 'RACING';
+            });
+            restartButton.addEventListener('click', restartGame);
+            optionsButton.addEventListener('click', () => {
+                pauseMenu.style.display = 'none';
+                optionsMenu.style.display = 'flex';
+                gameState = 'OPTIONS';
+            });
+            optionsBackButton.addEventListener('click', () => {
+                optionsMenu.style.display = 'none';
+                pauseMenu.style.display = 'flex';
+                gameState = 'PAUSED';
+            });
+            raceOverRestartButton.addEventListener('click', restartGame);
+            mainMenuButton.addEventListener('click', () => { window.location.reload(); });
+            setupControlListeners(dpadLeft, 'left');
+            setupControlListeners(dpadRight, 'right');
+            setupControlListeners(accelerateButton, 'accelerate');
+            setupControlListeners(brakeButton, 'brake');
+            
+            // Keyboard Controls
+            window.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                        controls.accelerate = true;
+                        accelerateButton.classList.add('active');
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                        controls.brake = true;
+                        brakeButton.classList.add('active');
+                        break;
+                    case 'ArrowLeft':
+                    case 'a':
+                        controls.left = true;
+                        dpadLeft.classList.add('active');
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                        controls.right = true;
+                        dpadRight.classList.add('active');
+                        break;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                        controls.accelerate = false;
+                        accelerateButton.classList.remove('active');
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                        controls.brake = false;
+                        brakeButton.classList.remove('active');
+                        break;
+                    case 'ArrowLeft':
+                    case 'a':
+                        controls.left = false;
+                        dpadLeft.classList.remove('active');
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                        controls.right = false;
+                        dpadRight.classList.remove('active');
+                        break;
+                }
+            });
+
+            opacitySlider.addEventListener('input', (e) => {
+                controlConfig.opacity = parseFloat(e.target.value);
+                applyControlConfig();
+                saveControlConfig();
+            });
+            sizeSlider.addEventListener('input', (e) => {
+                controlConfig.scale = parseFloat(e.target.value);
+                applyControlConfig();
+                saveControlConfig();
+            });
+            editPositionButton.addEventListener('click', () => {
+                if (window.innerHeight > window.innerWidth) {
+                    alert("Control editing is only available in landscape mode.");
+                    return;
+                }
+                enterControlEditMode();
+            });
+        }
+        
+        function setupControlListeners(element, controlKey) {
+            const onStart = (e) => { e.preventDefault(); e.stopPropagation(); controls[controlKey] = true; element.classList.add('active'); };
+            const onEnd = (e) => { e.preventDefault(); e.stopPropagation(); controls[controlKey] = false; element.classList.remove('active'); };
+            element.addEventListener('touchstart', onStart, { passive: false });
+            element.addEventListener('touchend', onEnd, { passive: false });
+            element.addEventListener('touchcancel', onEnd, { passive: false });
+        }
+
+        function saveControlConfig() { localStorage.setItem('f1RacerControlConfig', JSON.stringify(controlConfig)); }
+        function loadControlConfig() {
+            const savedConfig = localStorage.getItem('f1RacerControlConfig');
+            if (savedConfig) { controlConfig = JSON.parse(savedConfig); }
+            opacitySlider.value = controlConfig.opacity;
+            sizeSlider.value = controlConfig.scale;
+        }
+        
+        function applyControlConfig() {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const controlsPanel = document.getElementById('controls-panel');
+            const actionButtons = document.querySelector('.action-buttons');
+            const controlsToMove = [
+                { el: dpad, conf: controlConfig.dpad },
+                { el: accelerateButton, conf: controlConfig.accelerate },
+                { el: brakeButton, conf: controlConfig.brake }
+            ];
+
+            if (isLandscape) {
+                controlsToMove.forEach(({el, conf}) => {
+                    if (el.parentElement !== gameView) {
+                        gameView.appendChild(el);
+                    }
+                    el.style.position = 'absolute';
+                    const scale = controlConfig.scale;
+                    el.style.opacity = controlConfig.opacity;
+                    if (conf.w) { // D-pad
+                        el.style.width = `${conf.w * scale}vw`;
+                        el.style.height = `${conf.h * scale}vw`;
+                        el.style.left = `${conf.x}%`;
+                        el.style.top = `${conf.y}%`;
+                        el.style.transform = `translate(-${conf.x}%, -${conf.y}%)`;
+                    } else { // Action buttons
+                        el.style.width = `${conf.size * scale}vw`;
+                        el.style.height = `${conf.size * scale}vw`;
+                        el.style.left = `${conf.x}%`;
+                        el.style.top = `${conf.y}%`;
+                        el.style.transform = `translate(-50%, -50%)`;
+                    }
+                });
+            } else {
+                if (dpad.parentElement !== controlsPanel) {
+                    controlsPanel.prepend(dpad);
+                }
+                if (accelerateButton.parentElement !== actionButtons) {
+                    actionButtons.appendChild(accelerateButton);
+                }
+                if (brakeButton.parentElement !== actionButtons) {
+                    actionButtons.prepend(brakeButton);
+                }
+                controlsToMove.forEach(({el}) => {
+                    el.style.position = 'relative';
+                    el.style.left = 'auto';
+                    el.style.top = 'auto';
+                    el.style.transform = 'none';
+                    el.style.width = '';
+                    el.style.height = '';
+                    el.style.opacity = '1';
+                });
+            }
+        }
+        
+        function enterControlEditMode() {
+            optionsMenu.style.display = 'none';
+            controlsEditor.style.display = 'block';
+            const elementsToDrag = [dpad, accelerateButton, brakeButton];
+            const listeners = [];
+
+            elementsToDrag.forEach(el => {
+                controlsEditor.appendChild(el);
+                const listener = makeDraggable(el, controlConfig[el.id]);
+                listeners.push({el, listener});
+            });
+
+            const doneButton = document.createElement('button');
+            doneButton.textContent = 'DONE';
+            doneButton.className = 'menu-button';
+            doneButton.style.position = 'absolute';
+            doneButton.style.bottom = '5vh';
+            doneButton.style.left = '50%';
+            doneButton.style.transform = 'translateX(-50%)';
+            doneButton.onclick = () => {
+                listeners.forEach(({el, listener}) => el.removeEventListener('touchstart', listener));
+                controlsEditor.innerHTML = ''; // Clear children, including this button
+                controlsEditor.style.display = 'none';
+                optionsMenu.style.display = 'flex';
+                saveControlConfig();
+                applyControlConfig();
+            };
+            controlsEditor.appendChild(doneButton);
+        }
+        
+        function makeDraggable(element, config) {
+            let offsetX, offsetY;
+            function onTouchStart(e) {
+                e.preventDefault();
+                const touch = e.targetTouches[0];
+                const rect = element.getBoundingClientRect();
+                offsetX = touch.clientX - rect.left;
+                offsetY = touch.clientY - rect.top;
+                window.addEventListener('touchmove', onTouchMove, { passive: false });
+                window.addEventListener('touchend', onTouchEnd, { passive: false });
+            }
+            function onTouchMove(e) {
+                e.preventDefault();
+                const touch = e.targetTouches[0];
+                let x = (touch.clientX - offsetX) / window.innerWidth * 100;
+                let y = (touch.clientY - offsetY) / window.innerHeight * 100;
+                const rect = element.getBoundingClientRect();
+                const wPercent = rect.width / window.innerWidth * 100;
+                const hPercent = rect.height / window.innerHeight * 100;
+                x = Math.max(0, Math.min(100 - wPercent, x));
+                y = Math.max(0, Math.min(100 - hPercent, y));
+                element.style.left = `${x}%`;
+                element.style.top = `${y}%`;
+                element.style.transform = 'none';
+            }
+            function onTouchEnd(e) {
+                const rect = element.getBoundingClientRect();
+                let finalX, finalY;
+                if (config.w) { // D-pad
+                    finalX = (rect.left / window.innerWidth) * 100;
+                    finalY = (rect.top / window.innerHeight) * 100;
+                } else { // Action buttons
+                    finalX = ((rect.left + rect.width / 2) / window.innerWidth) * 100;
+                    finalY = ((rect.top + rect.height / 2) / window.innerHeight) * 100;
+                }
+                config.x = finalX;
+                config.y = finalY;
+                window.removeEventListener('touchmove', onTouchMove);
+                window.removeEventListener('touchend', onTouchEnd);
+            }
+            element.addEventListener('touchstart', onTouchStart, { passive: false });
+            return onTouchStart; // Return the listener function so it can be removed
+        }
+
+        // --- Start the game ---
+        init();
+    </script>
+</body>
+</html>
+
+
