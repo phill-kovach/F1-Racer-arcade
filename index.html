@@ -2,1204 +2,770 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>F1 Arcade Racer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Arcade F1 Racer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700;900&display=swap');
-
-        :root {
-            --background-color: #1a1a1a;
-            --off-track-color: #3a5f3a;
-            --primary-red: #e10600;
-            --text-color: #ffffff;
-            --dark-grey: #333;
-        }
-
         body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: var(--background-color);
-            font-family: 'Titillium Web', sans-serif;
-            color: var(--text-color);
-            overscroll-behavior: none;
+            font-family: 'Orbitron', sans-serif;
+            overscroll-behavior: contain;
             touch-action: none;
         }
-
         .game-container {
             display: flex;
-            width: 100vw;
+        }
+        .game-container.vertical {
+            flex-direction: column;
             height: 100vh;
         }
-
-        #game-view {
-            position: relative;
-            background-color: var(--off-track-color);
+        .game-container.horizontal {
+            flex-direction: row;
+            height: 100vh;
         }
-
+        .canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+        }
         #gameCanvas {
             display: block;
             width: 100%;
             height: 100%;
         }
-
-        /* UI Elements */
-        .ui-overlay {
+        .controls-wrapper.vertical {
+            width: 100%;
+            height: 35%;
+            padding: 1rem;
+            flex-shrink: 0;
+        }
+        .controls-wrapper.horizontal {
             position: absolute;
-            top: 0;
+            bottom: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 1.5vmin;
-            box-sizing: border-box;
         }
-        
-        #countdown-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 200;
-            display: none;
-            text-align: center;
-            text-shadow: 0 0 20px black;
-        }
-
-        #countdown-timer {
-            font-size: 25vmin;
-            font-weight: 900;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        #track-name {
-            font-size: 5vmin;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: -5vmin;
-        }
-
-        #pause-button {
-            position: absolute;
-            top: 1.5vmin;
-            left: 1.5vmin;
-            width: 8vmin;
-            height: 8vmin;
-            background-color: rgba(20, 20, 20, 0.7);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1.5vmin;
-            pointer-events: auto;
-            z-index: 150;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #pause-button svg {
-            width: 60%;
-            height: 60%;
-            fill: white;
-        }
-
-        .hud {
-            display: flex;
-            justify-content: flex-end;
-            font-size: 3.5vmin;
-            font-weight: 700;
-            text-shadow: 0 0 5px rgba(0,0,0,0.7);
-        }
-
-        .hud-right {
-            background-color: rgba(20, 20, 20, 0.7);
-            padding: 1.5vmin 2.5vmin;
-            border-radius: 1.5vmin;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            text-align: right;
-        }
-        
-        #tireWear {
-            width: 25vmin;
-            height: 1.5vmin;
-            background-color: #555;
-            border-radius: 0.75vmin;
-            overflow: hidden;
-            margin-top: 1vmin;
-            border: 1px solid rgba(0,0,0,0.5);
-        }
-
-        #tireWearBar {
-            height: 100%;
-            width: 100%;
-            background-color: #4CAF50;
-            border-radius: 0.75vmin;
-            transition: width 0.2s, background-color 0.2s;
-        }
-
-        #boxBoxMessage {
-            position: absolute;
-            top: 20%;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 8vmin;
-            font-weight: 900;
-            color: #ffdd00;
-            text-shadow: 0 0 10px #000;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        /* Controls Panel */
-        #controls-panel {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            background-color: #222;
-        }
-
-        .control-button {
-            background-color: rgba(0, 0, 0, 0.5);
-            border: 0.4vmin solid rgba(255, 255, 255, 0.3);
+        .control-btn {
+            background-color: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.7);
             border-radius: 50%;
-            pointer-events: auto;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             color: white;
-            font-size: 4vmin;
+            font-size: 2rem;
             user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation; /* Helps prevent accidental browser gestures */
-        }
-        
-        .control-button.active {
-            background-color: rgba(255, 255, 255, 0.4);
-        }
-
-        #dpad {
-            width: 35vmin;
-            height: 15vmin;
-            position: relative;
-        }
-
-        .dpad-arrow {
-            position: absolute;
-            background-color: rgba(0, 0, 0, 0.5);
-            border: 0.4vmin solid rgba(255, 255, 255, 0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: auto;
             touch-action: manipulation;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: background-color 0.1s;
+            pointer-events: auto;
         }
-        .dpad-arrow.active {
-            background-color: rgba(255, 255, 255, 0.4);
+        .control-btn:active {
+            background-color: rgba(255, 255, 255, 0.5);
         }
-        
-        #dpad-left, #dpad-right { width: 40%; height: 100%; top: 0; }
-        #dpad-left { left: 0; border-radius: 2vmin 0 0 2vmin; }
-        #dpad-right { right: 0; border-radius: 0 2vmin 2vmin 0; }
-        .dpad-arrow svg { fill: white; width: 60%; height: 60%; }
-
-        .action-buttons {
-            display: flex;
-            align-items: center;
-            gap: 5vmin;
-        }
-
-        /* Menus */
-        .menu {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 1000;
-        }
-
-        .menu-title {
-            font-size: 8vmin;
-            font-weight: 900;
-            margin-bottom: 4vh;
-            text-transform: uppercase;
-            letter-spacing: 0.2vmin;
-            border-bottom: 0.5vmin solid var(--primary-red);
-            padding-bottom: 2vh;
-        }
-
-        .menu-subtitle {
-            font-size: 6vmin;
-            font-weight: 700;
-            margin-bottom: 3vh;
-        }
-
-        .menu-button {
-            background-color: var(--primary-red);
-            color: white;
-            border: none;
-            padding: 2vh 4vw;
-            margin: 1.5vh 0;
-            font-size: 4vmin;
-            font-weight: 700;
-            border-radius: 1vmin;
-            cursor: pointer;
-            min-width: 50vw;
-            text-align: center;
-            transition: transform 0.1s, background-color 0.2s;
-        }
-        .menu-button:active {
-            transform: scale(0.95);
-        }
-        
-        .menu-button.secondary {
-            background-color: var(--dark-grey);
-        }
-
-        .team-grid {
+        .d-pad, .action-buttons {
             display: grid;
-            gap: 2vmin;
-            padding: 2vmin;
-            width: 90vw;
-            max-width: 800px;
+            gap: 1rem;
         }
-        .team-card {
-            border: 0.5vmin solid var(--dark-grey);
-            border-radius: 2vmin;
-            padding: 2vmin;
-            text-align: center;
-            transition: transform 0.2s, border-color 0.2s;
-        }
+        .d-pad { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+        .action-buttons { grid-template-columns: 1fr; grid-template-rows: repeat(2, 1fr); }
         
-        .team-card:active {
-            transform: scale(0.97);
-            border-color: var(--primary-red);
-        }
-        
-        .team-color {
-            width: 100%;
-            height: 10vmin;
-            border-radius: 1vmin;
-            margin-bottom: 1.5vmin;
-        }
-        
-        .team-name {
-            font-size: 3.5vmin;
-            font-weight: 700;
-            margin-bottom: 1vmin;
-        }
-        
-        .team-stats {
-            font-size: 2.5vmin;
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            text-align: left;
-        }
-        .team-stats li { margin-bottom: 0.5vmin; }
-        .team-stats .strength { color: #4CAF50; }
-        .team-stats .weakness { color: #f44336; }
-
-        /* --- LANDSCAPE STYLES --- */
-        @media (orientation: landscape) {
-            .game-container { flex-direction: row; }
-            #game-view { width: 100vw; height: 100vh; }
-            #controls-panel { display: none; } /* Hide the bottom panel */
-            
-            #dpad, .action-buttons .control-button { position: absolute; }
-            .team-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
         }
 
-        /* --- PORTRAIT STYLES --- */
-        @media (orientation: portrait) {
-            .game-container { flex-direction: column; }
-            #game-view { width: 100vw; height: 60vh; }
-            #controls-panel { width: 100vw; height: 40vh; }
-            
-            #dpad, .action-buttons .control-button { position: relative; }
-            #accelerate { width: 22vmin; height: 22vmin; }
-            #brake { width: 16vmin; height: 16vmin; }
-            .team-grid { grid-template-columns: 1fr 1fr; }
-            .menu-button { min-width: 70vw; }
+        .team-card, .track-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .team-card:hover, .track-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px var(--team-color, #fff);
+        }
+        .team-card.selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--team-color, #fff), 0 0 10px var(--team-color, #fff) inset;
+        }
+        .track-card.selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px #4ade80, 0 0 10px #4ade80 inset;
         }
     </style>
 </head>
-<body>
-    <div class="game-container">
-        <div id="game-view">
-            <canvas id="gameCanvas"></canvas>
-            <div class="ui-overlay">
-                <div id="countdown-container">
-                    <div id="countdown-timer">5</div>
-                    <div id="track-name"></div>
-                </div>
-                <div id="pause-button">
-                    <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </div>
-                <div class="hud">
-                    <div class="hud-right">
-                        <div>POS: <span id="position">1/10</span></div>
-                        <div>LAP: <span id="lap">1/12</span></div>
-                        <div>SPEED: <span id="speed">0</span> KPH</div>
-                        <div>TIRES</div>
-                        <div id="tireWear"><div id="tireWearBar"></div></div>
-                    </div>
-                </div>
-                <div id="boxBoxMessage">BOX BOX</div>
-            </div>
-        </div>
-        <div id="controls-panel">
-            <div id="dpad">
-                <div class="dpad-arrow" id="dpad-left">
-                    <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
-                </div>
-                <div class="dpad-arrow" id="dpad-right">
-                    <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                </div>
-            </div>
-            <div class="action-buttons">
-                <div class="control-button" id="brake">
-                    <svg viewBox="0 0 24 24" width="60%" height="60%" fill="white"><path d="M12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 8H7v-2h4v2zm4 0h-2v-2h2v2z"/></svg>
-                </div>
-                <div class="control-button" id="accelerate">
-                    <svg viewBox="0 0 24 24" width="60%" height="60%" fill="white"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-                </div>
-            </div>
+<body class="bg-gray-900 text-white overflow-hidden">
+
+    <div id="gameUI" class="w-full h-screen flex items-center justify-center p-4">
+        <!-- Main Menu -->
+        <div id="mainMenu" class="text-center">
+            <!-- FIX: Added responsive text sizes -->
+            <h1 class="text-5xl sm:text-6xl font-bold tracking-widest mb-4 text-red-500">ARCADE F1</h1>
+            <p class="text-lg sm:text-xl mb-8 text-gray-300">Top-Down Racing</p>
+            <!-- FIX: Added responsive padding and text sizes -->
+            <button id="startRaceBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 sm:py-4 sm:px-8 rounded-lg text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105">Start Race</button>
         </div>
 
-        <!-- Menus -->
-        <div class="menu" id="track-selection-menu">
-            <h1 class="menu-title">SELECT TRACK</h1>
-            <div id="track-grid"></div>
-        </div>
-        <div class="menu" id="start-menu" style="display: none;">
-            <div id="team-selection">
-                <h1 class="menu-title">SELECT YOUR TEAM</h1>
-                <div class="team-grid"></div>
+        <!-- Team Selection -->
+        <div id="teamSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-center">
+            <!-- FIX: Added responsive text sizes -->
+            <h2 class="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8">Choose Your Team</h2>
+            <div id="teamGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-6xl">
+                <!-- Team cards will be injected here by JS -->
             </div>
+            <button id="confirmTeamBtn" class="mt-6 sm:mt-8 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>Next</button>
         </div>
-        <div class="menu" id="pause-menu" style="display: none;">
-            <h1 class="menu-title">PAUSED</h1>
-            <button class="menu-button" id="resume-button">RESUME</button>
-            <button class="menu-button secondary" id="options-button">OPTIONS</button>
-            <button class="menu-button secondary" id="restart-button">RESTART RACE</button>
-        </div>
-        <div class="menu" id="options-menu" style="display: none;">
-            <h1 class="menu-title">OPTIONS</h1>
-            <p style="font-size: 3vmin; margin-bottom: 3vh;">Control layout is only editable in landscape mode.</p>
-            <div class="slider-container">
-                <label for="opacity-slider">Controls Opacity</label>
-                <input type="range" id="opacity-slider" min="0.1" max="1" step="0.05">
+
+        <!-- Track Selection -->
+        <div id="trackSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-center">
+            <!-- FIX: Added responsive text sizes -->
+            <h2 class="text-3xl sm:text-4xl font-bold mb-6">Select a Track</h2>
+            <div id="trackGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-6xl">
+                 <!-- Track cards will be injected here by JS -->
             </div>
-            <div class="slider-container">
-                <label for="size-slider">Controls Size</label>
-                <input type="range" id="size-slider" min="0.5" max="1.5" step="0.05">
-            </div>
-            <button class="menu-button" id="edit-position-button">EDIT POSITION</button>
-            <button class="menu-button secondary" id="options-back-button">BACK</button>
+             <button id="confirmTrackBtn" class="mt-6 sm:mt-8 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>Race!</button>
         </div>
-        <div class="menu" id="race-over-menu" style="display: none;">
-            <h1 class="menu-title">RACE FINISHED</h1>
-            <h2 class="menu-subtitle" id="final-position"></h2>
-            <button class="menu-button" id="race-over-restart-button">RESTART RACE</button>
-            <button class="menu-button secondary" id="main-menu-button">MAIN MENU</button>
-        </div>
-        <div id="controls-editor" style="display: none;"></div>
+
     </div>
 
-    <script>
-        // --- Polyfill for requestAnimationFrame ---
-        window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) { window.setTimeout(callback, 1000 / 60); };
+    <div id="gameArea" class="hidden w-full h-screen">
+        <div id="gameContainer" class="game-container vertical">
+            <div class="canvas-wrapper bg-gray-800">
+                <canvas id="gameCanvas"></canvas>
+                <div id="gameMessages" class="absolute inset-0 flex items-center justify-center text-8xl font-bold text-white" style="text-shadow: 0 0 15px black;"></div>
+                 <div id="hud" class="absolute top-2 left-2 text-2xl font-bold text-white" style="text-shadow: 0 0 5px black;">
+                    <div>Time: <span id="time">0.00</span></div>
+                    <div>Lap: <span id="lap">1/3</span></div>
+                </div>
+                 <!-- Pause Menu -->
+                <div id="pauseMenu" class="hidden absolute inset-0 modal flex-col items-center justify-center text-center">
+                    <h2 class="text-6xl font-bold mb-8">PAUSED</h2>
+                    <div class="flex flex-col gap-4">
+                        <button id="resumeBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Resume</button>
+                        <button id="restartRaceBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Restart Race</button>
+                        <button id="exitMenuBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Exit to Menu</button>
+                    </div>
+                </div>
+            </div>
+            <div id="controlsWrapper" class="controls-wrapper vertical bg-gray-900">
+                 <div class="w-full h-full grid grid-cols-2 gap-4">
+                    <div class="d-pad relative">
+                         <div id="steer-left" class="control-btn absolute" style="width: 70px; height: 70px; left: 10%; top: 30%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
+                        </div>
+                        <div id="steer-right" class="control-btn absolute" style="width: 70px; height: 70px; right: 10%; top: 30%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                        </div>
+                    </div>
+                    <div class="action-buttons relative">
+                        <div id="accelerate" class="control-btn absolute" style="width: 80px; height: 80px; right: 25%; top: 5%;">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/></svg>
+                        </div>
+                        <div id="brake" class="control-btn absolute" style="width: 60px; height: 60px; right: 35%; bottom: 5%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="settingsBar" class="absolute top-0 right-0 p-2 z-50 flex gap-2">
+            <button id="pauseBtn" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/></svg>
+            </button>
+            <button id="layoutToggle" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5zm6 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM2.5 4a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm11-8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/></svg>
+            </button>
+             <button id="editControlsBtn" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/></svg>
+            </button>
+        </div>
+    </div>
 
-        // --- DOM Elements ---
-        const gameView = document.getElementById('game-view');
+
+    <script>
+        // --- DOM ELEMENTS ---
+        const gameUI = document.getElementById('gameUI');
+        const mainMenu = document.getElementById('mainMenu');
+        const teamSelection = document.getElementById('teamSelection');
+        const trackSelection = document.getElementById('trackSelection');
+        const startRaceBtn = document.getElementById('startRaceBtn');
+        const confirmTeamBtn = document.getElementById('confirmTeamBtn');
+        const confirmTrackBtn = document.getElementById('confirmTrackBtn');
+        const teamGrid = document.getElementById('teamGrid');
+        const trackGrid = document.getElementById('trackGrid');
+        
+        const gameArea = document.getElementById('gameArea');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const countdownContainer = document.getElementById('countdown-container');
-        const countdownTimerEl = document.getElementById('countdown-timer');
-        const trackNameEl = document.getElementById('track-name');
-        const positionEl = document.getElementById('position');
-        const lapEl = document.getElementById('lap');
-        const speedEl = document.getElementById('speed');
-        const tireWearBar = document.getElementById('tireWearBar');
-        const boxBoxMessage = document.getElementById('boxBoxMessage');
-        const trackSelectionMenu = document.getElementById('track-selection-menu');
-        const startMenu = document.getElementById('start-menu');
-        const pauseMenu = document.getElementById('pause-menu');
-        const optionsMenu = document.getElementById('options-menu');
-        const raceOverMenu = document.getElementById('race-over-menu');
-        const pauseButton = document.getElementById('pause-button');
-        const resumeButton = document.getElementById('resume-button');
-        const optionsButton = document.getElementById('options-button');
-        const restartButton = document.getElementById('restart-button');
-        const optionsBackButton = document.getElementById('options-back-button');
-        const editPositionButton = document.getElementById('edit-position-button');
-        const finalPositionEl = document.getElementById('final-position');
-        const raceOverRestartButton = document.getElementById('race-over-restart-button');
-        const mainMenuButton = document.getElementById('main-menu-button');
-        const dpad = document.getElementById('dpad');
-        const dpadLeft = document.getElementById('dpad-left');
-        const dpadRight = document.getElementById('dpad-right');
-        const accelerateButton = document.getElementById('accelerate');
-        const brakeButton = document.getElementById('brake');
-        const controlsEditor = document.getElementById('controls-editor');
-        const opacitySlider = document.getElementById('opacity-slider');
-        const sizeSlider = document.getElementById('size-slider');
-
-        // --- Game State ---
-        let gameState = 'MENU'; // MENU, COUNTDOWN, RACING, PAUSED, OPTIONS, RACE_OVER
-        let playerTeam = null;
-        let cars = [];
-        let playerCar;
-        let selectedTrackIndex = -1;
-        let lastSelectedTrackIndex = -1;
-        const TOTAL_LAPS = 12;
-        const AI_COUNT = 9;
-
-        // --- Teams Data ---
-        const TEAMS = {
-            CRIMSON_STALLIONS: { name: "Crimson Stallions", color: "#DC0000", stats: { topSpeed: 1.1, acceleration: 0.95, handling: 0.9, tireWear: 1.1 }, strengths: ["Highest top speed"], weaknesses: ["Worse handling"] },
-            AZURE_PREDATORS: { name: "Azure Predators", color: "#0600EF", stats: { topSpeed: 0.98, acceleration: 1.1, handling: 1.05, tireWear: 0.95 }, strengths: ["Best acceleration"], weaknesses: ["Lower top speed"] },
-            SILVER_ARROWS: { name: "Silver Arrows", color: "#00D2BE", stats: { topSpeed: 1.0, acceleration: 1.0, handling: 1.0, tireWear: 0.9 }, strengths: ["Balanced performance"], weaknesses: ["No single strength"] },
-            EMERALD_VIPERS: { name: "Emerald Vipers", color: "#006F62", stats: { topSpeed: 0.95, acceleration: 1.02, handling: 1.1, tireWear: 0.98 }, strengths: ["Superb handling"], weaknesses: ["Lacks straight speed"] },
-            ORANGE_PHANTOMS: { name: "Orange Phantoms", color: "#FF8700", stats: { topSpeed: 1.05, acceleration: 1.05, handling: 0.95, tireWear: 1.0 }, strengths: ["Fast on straights"], weaknesses: ["Average handling"] }
+        const gameMessages = document.getElementById('gameMessages');
+        const hud = {
+            time: document.getElementById('time'),
+            lap: document.getElementById('lap'),
         };
+        const pauseMenu = document.getElementById('pauseMenu');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const restartRaceBtn = document.getElementById('restartRaceBtn');
+        const exitMenuBtn = document.getElementById('exitMenuBtn');
 
-        // --- TRACK DATA ---
-        let trackPath, pitLanePath, pitBoxPosition, startLine, checkpoints, trackWidth, pitLaneWidth;
-        const TRACKS = [
-            { // Grand Prix Circuit
-                name: "Grand Prix Circuit",
-                width: 375,
-                pitWidth: 75,
-                path: [ {x: 2250, y: 7500}, {x: 6750, y: 7500}, {x: 7500, y: 6750}, {x: 7500, y: 3000}, {x: 6750, y: 2250}, {x: 3000, y: 2250}, {x: 2250, y: 3000}, {x: 3000, y: 3750}, {x: 3000, y: 5250}, {x: 2250, y: 6000}, {x: 2250, y: 7500} ],
-                pitLane: [ {x: 2250, y: 7650}, {x: 6750, y: 7650} ],
-                pitBox: {x: 4500, y: 7650},
-                startLine: {x: 4500, y: 7500},
-                startPos: { x: 4500, y: 7500 },
-                startAngle: 0
-            },
-            { // Alpine Circuit (Reworked)
-                name: "Alpine Circuit",
-                width: 400,
-                pitWidth: 80,
-                path: [ {x: 1000, y: 5000}, {x: 1000, y: 2000}, {x: 1500, y: 1500}, {x: 3500, y: 1500}, {x: 4000, y: 2000}, {x: 4000, y: 3000}, {x: 3500, y: 3500}, {x: 2500, y: 3500}, {x: 2000, y: 4000}, {x: 2000, y: 5000}, {x: 1000, y: 5000} ],
-                pitLane: [ {x: 900, y: 5000}, {x: 900, y: 2000} ],
-                pitBox: {x: 900, y: 3500},
-                startLine: {x: 1000, y: 3500},
-                startPos: { x: 1000, y: 3500 },
-                startAngle: -Math.PI / 2
-            },
-            { // Coastal Circuit (New)
-                name: "Coastal Circuit",
-                width: 450,
-                pitWidth: 80,
-                path: [ {x: 1000, y: 1000}, {x: 5000, y: 1000}, {x: 5500, y: 1500}, {x: 5500, y: 4500}, {x: 5000, y: 5000}, {x: 2000, y: 5000}, {x: 1500, y: 4500}, {x: 1500, y: 3500}, {x: 2000, y: 3000}, {x: 3000, y: 3000}, {x: 3500, y: 2500}, {x: 3500, y: 2000}, {x: 2500, y: 1500}, {x: 1000, y: 1500}, {x: 1000, y: 1000} ],
-                pitLane: [ {x: 1000, y: 900}, {x: 5000, y: 900} ],
-                pitBox: {x: 3000, y: 900},
-                startLine: {x: 3000, y: 1000},
-                startPos: { x: 3000, y: 1000 },
-                startAngle: 0
-            },
-            { // Desert Loop (New)
-                name: "Desert Loop",
-                width: 500,
-                pitWidth: 100,
-                path: [ {x: 1000, y: 3000}, {x: 4000, y: 1000}, {x: 7000, y: 3000}, {x: 6000, y: 5000}, {x: 4000, y: 6000}, {x: 2000, y: 5000}, {x: 1000, y: 3000} ],
-                pitLane: [ {x: 1000, y: 2900}, {x: 4000, y: 900} ],
-                pitBox: {x: 2500, y: 1900},
-                startLine: {x: 1100, y: 3000},
-                startPos: { x: 1100, y: 3000 },
-                startAngle: 0
-            }
+        const layoutToggle = document.getElementById('layoutToggle');
+        const editControlsBtn = document.getElementById('editControlsBtn');
+        const gameContainer = document.getElementById('gameContainer');
+        const controlsWrapper = document.getElementById('controlsWrapper');
+        
+        // --- GAME CONFIG & STATE ---
+        let gameState = 'MENU';
+        let selectedTeam = null;
+        let selectedTrack = null;
+        let lastRandomTrackIndex = -1;
+        let controlEditing = false;
+        let animationFrameId;
+        
+        const teams = [
+            { id: 'mercurio', name: 'Mercurio', color: '#00D2BE', stats: { acceleration: 0.001, topSpeed: 3.8, handling: 0.045, braking: 0.08 } },
+            { id: 'taurus', name: 'Taurus Racing', color: '#3671C6', stats: { acceleration: 0.0012, topSpeed: 3.6, handling: 0.05, braking: 0.07 } },
+            { id: 'stallions', name: 'Red Stallions', color: '#DC0000', stats: { acceleration: 0.0011, topSpeed: 4.0, handling: 0.04, braking: 0.06 } },
+            { id: 'mclaren', name: 'McLaren Papaya', color: '#FF8700', stats: { acceleration: 0.0009, topSpeed: 3.9, handling: 0.048, braking: 0.075 } },
+            { id: 'aston', name: 'Aston Green', color: '#006F62', stats: { acceleration: 0.0013, topSpeed: 3.5, handling: 0.046, braking: 0.09 } },
+            { id: 'alpine', name: 'Azure Alpine', color: '#0090FF', stats: { acceleration: 0.001, topSpeed: 3.7, handling: 0.047, braking: 0.07 } },
         ];
-        
-        const controls = { left: false, right: false, accelerate: false, brake: false };
-        let controlConfig = {
-            dpad: { x: 15, y: 75, w: 25, h: 12 },
-            accelerate: { x: 85, y: 78, size: 14 },
-            brake: { x: 70, y: 85, size: 10 },
-            opacity: 0.5,
-            scale: 1.0
+
+        const tracks = [
+            { id: 'monza', name: 'Monza', grassColor: '#4A6A4A', trackColor: '#555555', kerbColor: '#D3D3D3', path: [ {x:200,y:450}, {x:400,y:450}, {x:450,y:425}, {x:425,y:400}, {x:550,y:400}, {x:650,y:350}, {x:850,y:150}, {x:800,y:100}, {x:700,y:100}, {x:600,y:150}, {x:500,y:100}, {x:400,y:150}, {x:200,y:150}, {x:150,y:200}, {x:150,y:350}, {x:175,y:425} ] },
+            { id: 'silverstone', name: 'Silverstone', grassColor: '#557555', trackColor: '#606060', kerbColor: '#E0E0E0', path: [ {x:200,y:450},{x:350,y:450},{x:400,y:400},{x:400,y:200},{x:450,y:150},{x:750,y:150},{x:800,y:200},{x:800,y:350},{x:750,y:400},{x:600,y:400},{x:550,y:350},{x:250,y:350},{x:200,y:400}, ] },
+            { id: 'spa', name: 'Spa', grassColor: '#3E5E3E', trackColor: '#4C4C4C', kerbColor: '#C8C8C8', path: [ {x:200,y:150},{x:500,y:150},{x:600,y:100},{x:800,y:100},{x:900,y:200},{x:900,y:400},{x:800,y:500},{x:500,y:500},{x:450,y:450},{x:450,y:350},{x:400,y:300},{x:250,y:300},{x:200,y:250}, ] },
+            { id: 'suzuka', name: 'Suzuka', grassColor: '#4F6F4F', trackColor: '#5A5A5A', kerbColor: '#DBDBDB', path: [ {x:150,y:450}, {x:400,y:450}, {x:450,y:400}, {x:400,y:350}, {x:450,y:300}, {x:650,y:300}, {x:750,y:350}, {x:800,y:250}, {x:750,y:150}, {x:500,y:150}, {x:450,y:100}, {x:250,y:100}, {x:200,y:150}, {x:200,y:250}, {x:250,y:300}, {x:150,y:350} ] },
+            { id: 'bahrain', name: 'Bahrain', grassColor: '#A99572', trackColor: '#686868', kerbColor: '#F0F0F0', path: [ {x:200,y:450},{x:800,y:450},{x:850,y:400},{x:850,y:350},{x:800,y:300},{x:700,y:300},{x:650,y:250},{x:650,y:150},{x:700,y:100},{x:400,y:100},{x:350,y:150},{x:300,y:150},{x:250,y:200},{x:250,y:350},{x:200,y:400}, ] },
+        ];
+
+        // --- CAR & PHYSICS ---
+        const car = {
+            x: 200, y: 450,
+            width: 12, height: 22,
+            speed: 0, angle: 0,
+            steer: 0,
+            stats: { ...teams[0].stats }, // Default stats
+            inputs: { accelerate: false, brake: false, left: false, right: false },
+            img: new Image()
         };
 
-        const camera = { x: 0, y: 0, zoom: 0.2 };
+        // --- GAME LOOP & TIMING ---
+        let lastTime = 0;
+        let raceTimer = 0;
+        let currentLap = 1;
+        const totalLaps = 3;
+        let checkpoints = [];
+        let currentCheckpoint = 0;
 
-        class Car {
-            constructor(isPlayer, team, startPos, startAngle) {
-                this.isPlayer = isPlayer;
-                this.team = team;
-                this.x = startPos.x;
-                this.y = startPos.y;
-                this.angle = startAngle;
-                this.speed = 0;
-                this.steer = 0;
-                this.width = 40;
-                this.height = 80;
-                this.stats = team.stats;
-                this.maxSpeed = 25 * this.stats.topSpeed;
-                this.acceleration = 0.15 * this.stats.acceleration; // Reduced acceleration
-                this.braking = 0.5;
-                this.handling = 0.03 * this.stats.handling; // Reduced handling
-                this.friction = 0.985; 
-                this.lap = 0;
-                this.checkpoint = 0;
-                this.rank = 0;
-                this.isPitting = false;
-                this.tireStrength = 1.0;
-                this.tireWearRate = 0.0001 * this.stats.tireWear;
-                if (!isPlayer) {
-                    this.aiTargetNode = 1;
-                    this.aiSteerRandomness = (Math.random() - 0.5) * 0.1;
-                }
-            }
+        // --- UI INITIALIZATION ---
+        function populateTeamSelection() {
+            teamGrid.innerHTML = teams.map(t => {
+                const statValue = (val, max) => Math.max(0, Math.min(max, Math.round(val)));
+                const topSpeedStat = statValue(t.stats.topSpeed * 2.5, 10);
+                const accelerationStat = statValue(t.stats.acceleration * 8000, 10);
+                const handlingStat = statValue(t.stats.handling * 200, 10);
+                const brakingStat = statValue(t.stats.braking * 120, 10);
 
-            update() {
-                const grip = 0.5 + (this.tireStrength * 0.5);
-                if (this.speed > 1 && this.isPlayer) {
-                    this.tireStrength -= this.tireWearRate * (Math.abs(this.steer) + 0.1);
-                    this.tireStrength = Math.max(0, this.tireStrength);
-                }
-                
-                if (this.isPitting && this.speed < 1) {
-                    this.tireStrength += 0.01;
-                    if (this.tireStrength >= 1.0) {
-                        this.tireStrength = 1.0;
-                        this.isPitting = false;
-                    }
-                }
-
-                if (gameState !== 'RACING') {
-                    this.speed *= this.friction;
-                } else if (this.isPlayer) {
-                    if (controls.accelerate && !this.isPitting) this.speed += this.acceleration;
-                    if (controls.brake) this.speed -= this.braking;
-                    this.steer = 0;
-                    if (controls.left) this.steer = -1;
-                    if (controls.right) this.steer = 1;
-                } else {
-                    this.updateAI();
-                }
-
-                this.speed = Math.max(0, Math.min(this.maxSpeed, this.speed));
-                this.speed *= this.friction;
-
-                if (this.speed > 0.1) {
-                    const turnSpeed = this.steer * this.handling * grip * (1 - this.speed / (this.maxSpeed * 1.5));
-                    this.angle += turnSpeed;
-                }
-
-                this.x += Math.cos(this.angle) * this.speed;
-                this.y += Math.sin(this.angle) * this.speed;
-
-                this.handleTrackCollisions();
-                this.updateCheckpoints();
-            }
-            
-            updateAI() {
-                if (this.isPitting && this.tireStrength < 0.95) { this.speed = 0; return; }
-                if (this.isPitting && this.tireStrength >= 0.95) { this.isPitting = false; }
-
-                if (this.lap > 2 && this.tireStrength < 0.3 && !this.isPitting) {
-                    const target = pitBoxPosition;
-                    const dx = target.x - this.x;
-                    const dy = target.y - this.y;
-                    const targetAngle = Math.atan2(dy, dx);
-                    let angleDiff = targetAngle - this.angle;
-                    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-                    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-                    this.steer = Math.sign(angleDiff) * 0.8;
-                    this.speed += this.acceleration * 0.7;
-                    if (Math.hypot(dx, dy) < 100) { this.isPitting = true; }
-                    return;
-                }
-
-                const target = trackPath[this.aiTargetNode];
-                const dx = target.x - this.x;
-                const dy = target.y - this.y;
-                if (Math.hypot(dx, dy) < 450) { this.aiTargetNode = (this.aiTargetNode + 1) % trackPath.length; }
-
-                const targetAngle = Math.atan2(dy, dx);
-                let angleDiff = targetAngle - this.angle;
-                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-                this.steer = Math.sign(angleDiff) * 0.8 + this.aiSteerRandomness;
-                
-                const nextNode = trackPath[(this.aiTargetNode + 1) % trackPath.length];
-                const nextDx = nextNode.x - target.x;
-                const nextDy = nextNode.y - target.y;
-                const nextTargetAngle = Math.atan2(nextDy, nextDx);
-                let cornerAngleDiff = Math.abs(targetAngle - nextTargetAngle);
-                const desiredSpeed = this.maxSpeed * (1 - Math.min(cornerAngleDiff, 1.0) * 0.6);
-
-                if (this.speed > desiredSpeed) { this.speed -= this.braking * 0.5; }
-                else { this.speed += this.acceleration * 0.8; }
-            }
-            
-            handleTrackCollisions() {
-                let minDist = Infinity;
-                let onTrack = false;
-                
-                for (let i = 0; i < trackPath.length -1; i++) {
-                    const p1 = trackPath[i];
-                    const p2 = trackPath[i+1];
-                    const dist = this.distToSegment({x: this.x, y: this.y}, p1, p2);
-                    if (dist < minDist) minDist = dist;
-                }
-                
-                if (minDist < trackWidth / 2) { onTrack = true; }
-                else if (minDist < trackWidth / 2 + 50) { this.speed *= 0.9; onTrack = true; }
-                
-                const pitDist = this.distToSegment({x: this.x, y: this.y}, pitLanePath[0], pitLanePath[1]);
-                if (pitDist < pitLaneWidth / 2) { onTrack = true; }
-                
-                if (this.isPlayer && pitDist < pitLaneWidth / 2) {
-                    if (Math.hypot(this.x - pitBoxPosition.x, this.y - pitBoxPosition.y) < 60) {
-                        this.isPitting = true;
-                    }
-                }
-                if (!onTrack) { this.speed *= 0.5; }
-            }
-
-            distToSegment(p, v, w) {
-                const l2 = (v.x - w.x)**2 + (v.y - w.y)**2;
-                if (l2 == 0) return Math.hypot(p.x - v.x, p.y - v.y);
-                let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-                t = Math.max(0, Math.min(1, t));
-                return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
-            }
-            
-            updateCheckpoints() {
-                const nextCheckpointIndex = (this.checkpoint + 1) % checkpoints.length;
-                const nextCheckpoint = checkpoints[nextCheckpointIndex];
-                if (Math.hypot(this.x - nextCheckpoint.x, this.y - nextCheckpoint.y) < trackWidth * 1.5) {
-                    if (nextCheckpointIndex === 0 && this.checkpoint === checkpoints.length - 1) {
-                        this.lap++;
-                    }
-                    this.checkpoint = nextCheckpointIndex;
-                }
-            }
-            
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.angle);
-
-                ctx.fillStyle = this.team.color;
-                ctx.beginPath();
-                ctx.moveTo(this.height / 2, 0); // Nose
-                ctx.lineTo(-this.height / 3, -this.width / 2); // Back left
-                ctx.lineTo(-this.height / 3, this.width / 2); // Back right
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.fillStyle = '#111';
-                ctx.beginPath();
-                ctx.moveTo(this.height / 4, 0);
-                ctx.lineTo(-this.height / 5, -this.width / 4);
-                ctx.lineTo(-this.height / 5, this.width / 4);
-                ctx.closePath();
-                ctx.fill();
-                
-                ctx.restore();
-            }
-        }
-
-        function gameLoop() {
-            if (gameState === 'RACING') { update(); }
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function update() {
-            if (playerCar && playerCar.lap >= TOTAL_LAPS) { endRace(); return; }
-            cars.forEach(car => car.update());
-            cars.sort((a, b) => (b.lap * checkpoints.length + b.checkpoint) - (a.lap * checkpoints.length + a.checkpoint));
-            cars.forEach((car, index) => { car.rank = index + 1; });
-            updateUI();
-        }
-
-        function endRace() {
-            gameState = 'RACE_OVER';
-            const s = (p) => { return p === 1 ? 'st' : p === 2 ? 'nd' : p === 3 ? 'rd' : 'th'; };
-            finalPositionEl.textContent = `You finished ${playerCar.rank}${s(playerCar.rank)}!`;
-            raceOverMenu.style.display = 'flex';
-        }
-
-        function draw() {
-            const logicalWidth = canvas.clientWidth;
-            const logicalHeight = canvas.clientHeight;
-            ctx.clearRect(0, 0, logicalWidth, logicalHeight);
-            if (playerCar) {
-                camera.x = playerCar.x - logicalWidth / (2 * camera.zoom);
-                camera.y = playerCar.y - logicalHeight / (2 * camera.zoom);
-            }
-            ctx.save();
-            ctx.scale(camera.zoom, camera.zoom);
-            ctx.translate(-camera.x, -camera.y);
-            drawTrack();
-            cars.forEach(car => { car.draw(); });
-            ctx.restore();
-        }
-        
-        function drawTrack() {
-            if (!trackPath) return; // Prevent error before game starts
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-            const borderWidth = 15;
-            ctx.strokeStyle = '#444';
-            ctx.lineWidth = trackWidth + borderWidth * 2;
-            ctx.beginPath();
-            ctx.moveTo(trackPath[0].x, trackPath[0].y);
-            for(let i = 1; i < trackPath.length; i++) ctx.lineTo(trackPath[i].x, trackPath[i].y);
-            ctx.closePath();
-            ctx.stroke();
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = trackWidth;
-            ctx.stroke();
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 5;
-            ctx.setLineDash([25, 25]);
-            ctx.stroke();
-            ctx.strokeStyle = '#e10600';
-            ctx.lineDashOffset = 25;
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.lineDashOffset = 0;
-            ctx.strokeStyle = '#aaaaaa';
-            ctx.lineWidth = pitLaneWidth;
-            ctx.beginPath();
-            ctx.moveTo(pitLanePath[0].x, pitLanePath[0].y);
-            ctx.lineTo(pitLanePath[1].x, pitLanePath[1].y);
-            ctx.stroke();
-            ctx.fillStyle = playerTeam ? playerTeam.color : '#555';
-            ctx.fillRect(pitBoxPosition.x - 30, pitBoxPosition.y - 60, 60, 120);
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 5;
-            ctx.strokeRect(pitBoxPosition.x - 30, pitBoxPosition.y - 60, 60, 120);
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 15;
-            ctx.beginPath();
-            const isVerticalStart = Math.abs(Math.cos(playerCar.angle)) < 0.5;
-            if(isVerticalStart) {
-                ctx.moveTo(startLine.x, startLine.y - trackWidth/2);
-                ctx.lineTo(startLine.x, startLine.y + trackWidth/2);
-            } else {
-                ctx.moveTo(startLine.x - trackWidth/2, startLine.y);
-                ctx.lineTo(startLine.x + trackWidth/2, startLine.y);
-            }
-            ctx.stroke();
-        }
-
-        function updateUI() {
-            if (!playerCar) return;
-            positionEl.textContent = `${playerCar.rank}/${cars.length}`;
-            lapEl.textContent = `${Math.min(TOTAL_LAPS, playerCar.lap + 1)}/${TOTAL_LAPS}`;
-            speedEl.textContent = Math.round(playerCar.speed * 15);
-            const tirePercentage = playerCar.tireStrength * 100;
-            tireWearBar.style.width = `${tirePercentage}%`;
-            if (tirePercentage > 60) tireWearBar.style.backgroundColor = '#4CAF50';
-            else if (tirePercentage > 30) tireWearBar.style.backgroundColor = '#FFC107';
-            else tireWearBar.style.backgroundColor = '#F44336';
-            if (playerCar.tireStrength < 0.25 && playerCar.lap >= 0) { boxBoxMessage.style.opacity = 1; }
-            else { boxBoxMessage.style.opacity = 0; }
-        }
-        
-        function init() {
-            handleOrientationChange();
-            populateTrackSelection();
-            populateTeamSelection();
-            loadControlConfig();
-            setupEventListeners();
-            gameLoop();
-        }
-        
-        function setupCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            const rect = gameView.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-        }
-
-        function loadTrack(trackData) {
-            trackPath = trackData.path;
-            pitLanePath = trackData.pitLane;
-            pitBoxPosition = trackData.pitBox;
-            startLine = trackData.startLine;
-            trackWidth = trackData.width;
-            pitLaneWidth = trackData.pitWidth;
-            checkpoints = trackPath.map(p => ({...p}));
-            return { startPos: trackData.startPos, startAngle: trackData.startAngle };
-        }
-
-        function startGame(teamKey) {
-            playerTeam = TEAMS[teamKey];
-            
-            let trackIndex = selectedTrackIndex;
-            if (trackIndex === -1) {
-                trackIndex = Math.floor(Math.random() * TRACKS.length);
-            }
-            lastSelectedTrackIndex = trackIndex;
-            const selectedTrack = TRACKS[trackIndex];
-            const { startPos, startAngle } = loadTrack(selectedTrack);
-            
-            cars = [];
-            
-            playerCar = new Car(true, playerTeam, startPos, startAngle);
-            cars.push(playerCar);
-            
-            const teamKeys = Object.keys(TEAMS);
-            for (let i = 0; i < AI_COUNT; i++) {
-                const team = TEAMS[teamKeys[i % teamKeys.length]];
-                const isVerticalStart = Math.abs(Math.cos(startAngle)) < 0.5;
-                const gridPos = {
-                    x: startPos.x + (isVerticalStart ? (i % 2 === 0 ? -60 : 60) : Math.floor((i+2)/2) * -120),
-                    y: startPos.y + (isVerticalStart ? Math.floor((i+2)/2) * 120 : (i % 2 === 0 ? -60 : 60))
-                };
-                cars.push(new Car(false, team, gridPos, startAngle));
-            }
-            
-            startMenu.style.display = 'none';
-            raceOverMenu.style.display = 'none';
-            startCountdown(selectedTrack.name);
-        }
-
-        function startCountdown(trackName) {
-            let count = 5;
-            trackNameEl.textContent = trackName;
-            countdownTimerEl.textContent = count;
-            countdownContainer.style.display = 'block';
-            gameState = 'COUNTDOWN';
-            const countdownInterval = setInterval(() => {
-                count--;
-                if (count > 0) { countdownTimerEl.textContent = count; }
-                else {
-                    clearInterval(countdownInterval);
-                    countdownTimerEl.textContent = 'GO!';
-                    setTimeout(() => {
-                        countdownContainer.style.display = 'none';
-                        gameState = 'RACING';
-                    }, 500);
-                }
-            }, 1000);
-        }
-        
-        function restartGame() {
-            if (playerTeam) {
-                startGame(Object.keys(TEAMS).find(key => TEAMS[key] === playerTeam));
-                pauseMenu.style.display = 'none';
-                optionsMenu.style.display = 'none';
-            }
+                return `
+                <div class="team-card border-4 rounded-lg p-4 cursor-pointer bg-gray-800" data-team-id="${t.id}" style="--team-color: ${t.color}; border-color: ${t.color};">
+                    <h3 class="text-2xl font-bold text-center mb-2">${t.name}</h3>
+                    <div class="text-sm">
+                        <p>Top Speed: <span class="font-bold float-right">${'█'.repeat(topSpeedStat)}${'░'.repeat(10 - topSpeedStat)}</span></p>
+                        <p>Acceleration: <span class="font-bold float-right">${'█'.repeat(accelerationStat)}${'░'.repeat(10 - accelerationStat)}</span></p>
+                        <p>Handling: <span class="font-bold float-right">${'█'.repeat(handlingStat)}${'░'.repeat(10 - handlingStat)}</span></p>
+                        <p>Braking: <span class="font-bold float-right">${'█'.repeat(brakingStat)}${'░'.repeat(10 - brakingStat)}</span></p>
+                    </div>
+                </div>
+                `;
+            }).join('');
         }
 
         function populateTrackSelection() {
-            const grid = document.getElementById('track-grid');
-            grid.innerHTML = '';
-            TRACKS.forEach((track, index) => {
-                const button = document.createElement('button');
-                button.className = 'menu-button';
-                button.textContent = track.name;
-                button.onclick = () => {
-                    selectedTrackIndex = index;
-                    trackSelectionMenu.style.display = 'none';
-                    startMenu.style.display = 'flex';
-                };
-                grid.appendChild(button);
-            });
-            const randomButton = document.createElement('button');
-            randomButton.className = 'menu-button secondary';
-            randomButton.textContent = 'Random Track';
-            randomButton.onclick = () => {
-                selectedTrackIndex = -1; // -1 signifies random
-                trackSelectionMenu.style.display = 'none';
-                startMenu.style.display = 'flex';
-            };
-            grid.appendChild(randomButton);
+            const trackHTML = tracks.map(t => `
+                <div class="track-card border-2 border-gray-600 rounded-lg p-4 cursor-pointer bg-gray-800" data-track-id="${t.id}">
+                    <h3 class="text-2xl font-bold text-center">${t.name}</h3>
+                </div>
+            `).join('');
+            trackGrid.innerHTML = trackHTML + `
+                <div class="track-card border-2 border-dashed border-gray-400 rounded-lg p-4 cursor-pointer bg-gray-800 flex items-center justify-center" data-track-id="random">
+                    <h3 class="text-2xl font-bold text-center">Random Track</h3>
+                </div>
+            `;
         }
 
-        function populateTeamSelection() {
-            const grid = document.querySelector('.team-grid');
-            grid.innerHTML = '';
-            for (const key in TEAMS) {
-                const team = TEAMS[key];
-                const card = document.createElement('div');
-                card.className = 'team-card';
-                card.onclick = () => startGame(key);
-                let strengthsHTML = team.strengths.map(s => `<li class="strength">+ ${s}</li>`).join('');
-                let weaknessesHTML = team.weaknesses.map(w => `<li class="weakness">- ${w}</li>`).join('');
-                card.innerHTML = `<div class="team-color" style="background-color: ${team.color};"></div><div class="team-name">${team.name}</div><ul class="team-stats">${strengthsHTML}${weaknessesHTML}</ul>`;
-                grid.appendChild(card);
+        // --- UI EVENT LISTENERS ---
+        startRaceBtn.addEventListener('click', () => {
+            mainMenu.classList.add('hidden');
+            teamSelection.classList.remove('hidden');
+        });
+
+        teamGrid.addEventListener('click', (e) => {
+            const card = e.target.closest('.team-card');
+            if (card) {
+                selectedTeam = teams.find(t => t.id === card.dataset.teamId);
+                document.querySelectorAll('.team-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                confirmTeamBtn.disabled = false;
             }
+        });
+
+        confirmTeamBtn.addEventListener('click', () => {
+            teamSelection.classList.add('hidden');
+            trackSelection.classList.remove('hidden');
+        });
+
+        trackGrid.addEventListener('click', (e) => {
+            const card = e.target.closest('.track-card');
+            if (card) {
+                const trackId = card.dataset.trackId;
+                if (trackId === 'random') {
+                    let randomIndex;
+                    do {
+                        randomIndex = Math.floor(Math.random() * tracks.length);
+                    } while (tracks.length > 1 && randomIndex === lastRandomTrackIndex);
+                    lastRandomTrackIndex = randomIndex;
+                    selectedTrack = tracks[randomIndex];
+                } else {
+                    selectedTrack = tracks.find(t => t.id === trackId);
+                }
+                document.querySelectorAll('.track-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                confirmTrackBtn.disabled = true; // Prevent double click
+                setTimeout(() => {
+                    confirmTrackBtn.disabled = false;
+                    confirmTrackBtn.click();
+                }, 200);
+            }
+        });
+
+        confirmTrackBtn.addEventListener('click', () => {
+            if (selectedTeam && selectedTrack) {
+                startGame();
+            }
+        });
+
+        // --- GAME LOGIC ---
+        function startRaceSequence() {
+            draw(); // Draw initial state
+            gameState = 'COUNTDOWN';
+            let countdown = 3;
+            gameMessages.textContent = countdown;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    gameMessages.textContent = countdown;
+                } else if (countdown === 0) {
+                    gameMessages.textContent = 'GO!';
+                } else {
+                    gameMessages.textContent = '';
+                    clearInterval(countdownInterval);
+                    gameState = 'RACING';
+                    lastTime = performance.now();
+                    raceTimer = 0;
+                    currentLap = 1;
+                    animationFrameId = requestAnimationFrame(gameLoop);
+                }
+            }, 1000);
         }
 
-        function handleOrientationChange() {
-            setTimeout(() => {
-                setupCanvas();
-                applyControlConfig();
-            }, 100); 
-        }
-
-        function setupEventListeners() {
-            window.addEventListener('resize', handleOrientationChange);
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && gameState === 'RACING') {
-                    gameState = 'PAUSED';
-                    pauseMenu.style.display = 'flex';
-                }
-            });
-            pauseButton.addEventListener('click', () => {
-                if (gameState === 'RACING') {
-                    gameState = 'PAUSED';
-                    pauseMenu.style.display = 'flex';
-                }
-            });
-            resumeButton.addEventListener('click', () => {
-                pauseMenu.style.display = 'none';
-                gameState = 'RACING';
-            });
-            restartButton.addEventListener('click', restartGame);
-            optionsButton.addEventListener('click', () => {
-                pauseMenu.style.display = 'none';
-                optionsMenu.style.display = 'flex';
-                gameState = 'OPTIONS';
-            });
-            optionsBackButton.addEventListener('click', () => {
-                optionsMenu.style.display = 'none';
-                pauseMenu.style.display = 'flex';
-                gameState = 'PAUSED';
-            });
-            raceOverRestartButton.addEventListener('click', restartGame);
-            mainMenuButton.addEventListener('click', () => { window.location.reload(); });
-            setupControlListeners(dpadLeft, 'left');
-            setupControlListeners(dpadRight, 'right');
-            setupControlListeners(accelerateButton, 'accelerate');
-            setupControlListeners(brakeButton, 'brake');
+        function startGame() {
+            gameUI.classList.add('hidden');
+            gameArea.classList.remove('hidden');
+            car.stats = { ...selectedTeam.stats };
             
-            // Keyboard Controls
-            window.addEventListener('keydown', (e) => {
-                switch(e.key) {
-                    case 'ArrowUp':
-                    case 'w':
-                        controls.accelerate = true;
-                        accelerateButton.classList.add('active');
-                        break;
-                    case 'ArrowDown':
-                    case 's':
-                        controls.brake = true;
-                        brakeButton.classList.add('active');
-                        break;
-                    case 'ArrowLeft':
-                    case 'a':
-                        controls.left = true;
-                        dpadLeft.classList.add('active');
-                        break;
-                    case 'ArrowRight':
-                    case 'd':
-                        controls.right = true;
-                        dpadRight.classList.add('active');
-                        break;
-                }
-            });
+            resizeCanvas();
+            setupTrack();
 
-            window.addEventListener('keyup', (e) => {
-                switch(e.key) {
-                    case 'ArrowUp':
-                    case 'w':
-                        controls.accelerate = false;
-                        accelerateButton.classList.remove('active');
-                        break;
-                    case 'ArrowDown':
-                    case 's':
-                        controls.brake = false;
-                        brakeButton.classList.remove('active');
-                        break;
-                    case 'ArrowLeft':
-                    case 'a':
-                        controls.left = false;
-                        dpadLeft.classList.remove('active');
-                        break;
-                    case 'ArrowRight':
-                    case 'd':
-                        controls.right = false;
-                        dpadRight.classList.remove('active');
-                        break;
-                }
-            });
+            const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 36"><path d="M10 0 L20 30 L18 36 L14 32 L6 32 L2 36 L0 30 Z" fill="${selectedTeam.color}" stroke="black" stroke-width="1"/><path d="M8 20 L12 20 L12 28 L8 28 Z" fill="black"/><path d="M4 4 L16 4 L14 10 L6 10 Z" fill="white" stroke="black" stroke-width="0.5"/><path d="M4 28 L2 34" fill="none" stroke="black" stroke-width="2"/><path d="M16 28 L18 34" fill="none" stroke="black" stroke-width="2"/></svg>`;
+            car.img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
 
-            opacitySlider.addEventListener('input', (e) => {
-                controlConfig.opacity = parseFloat(e.target.value);
-                applyControlConfig();
-                saveControlConfig();
-            });
-            sizeSlider.addEventListener('input', (e) => {
-                controlConfig.scale = parseFloat(e.target.value);
-                applyControlConfig();
-                saveControlConfig();
-            });
-            editPositionButton.addEventListener('click', () => {
-                if (window.innerHeight > window.innerWidth) {
-                    alert("Control editing is only available in landscape mode.");
-                    return;
-                }
-                enterControlEditMode();
-            });
-        }
-        
-        function setupControlListeners(element, controlKey) {
-            const onStart = (e) => { e.preventDefault(); e.stopPropagation(); controls[controlKey] = true; element.classList.add('active'); };
-            const onEnd = (e) => { e.preventDefault(); e.stopPropagation(); controls[controlKey] = false; element.classList.remove('active'); };
-            element.addEventListener('touchstart', onStart, { passive: false });
-            element.addEventListener('touchend', onEnd, { passive: false });
-            element.addEventListener('touchcancel', onEnd, { passive: false });
-        }
-
-        function saveControlConfig() { localStorage.setItem('f1RacerControlConfig', JSON.stringify(controlConfig)); }
-        function loadControlConfig() {
-            const savedConfig = localStorage.getItem('f1RacerControlConfig');
-            if (savedConfig) { controlConfig = JSON.parse(savedConfig); }
-            opacitySlider.value = controlConfig.opacity;
-            sizeSlider.value = controlConfig.scale;
-        }
-        
-        function applyControlConfig() {
-            const isLandscape = window.innerWidth > window.innerHeight;
-            const controlsPanel = document.getElementById('controls-panel');
-            const actionButtons = document.querySelector('.action-buttons');
-            const controlsToMove = [
-                { el: dpad, conf: controlConfig.dpad },
-                { el: accelerateButton, conf: controlConfig.accelerate },
-                { el: brakeButton, conf: controlConfig.brake }
-            ];
-
-            if (isLandscape) {
-                controlsToMove.forEach(({el, conf}) => {
-                    if (el.parentElement !== gameView) {
-                        gameView.appendChild(el);
-                    }
-                    el.style.position = 'absolute';
-                    const scale = controlConfig.scale;
-                    el.style.opacity = controlConfig.opacity;
-                    if (conf.w) { // D-pad
-                        el.style.width = `${conf.w * scale}vw`;
-                        el.style.height = `${conf.h * scale}vw`;
-                        el.style.left = `${conf.x}%`;
-                        el.style.top = `${conf.y}%`;
-                        el.style.transform = `translate(-${conf.x}%, -${conf.y}%)`;
-                    } else { // Action buttons
-                        el.style.width = `${conf.size * scale}vw`;
-                        el.style.height = `${conf.size * scale}vw`;
-                        el.style.left = `${conf.x}%`;
-                        el.style.top = `${conf.y}%`;
-                        el.style.transform = `translate(-50%, -50%)`;
-                    }
-                });
-            } else {
-                if (dpad.parentElement !== controlsPanel) {
-                    controlsPanel.prepend(dpad);
-                }
-                if (accelerateButton.parentElement !== actionButtons) {
-                    actionButtons.appendChild(accelerateButton);
-                }
-                if (brakeButton.parentElement !== actionButtons) {
-                    actionButtons.prepend(brakeButton);
-                }
-                controlsToMove.forEach(({el}) => {
-                    el.style.position = 'relative';
-                    el.style.left = 'auto';
-                    el.style.top = 'auto';
-                    el.style.transform = 'none';
-                    el.style.width = '';
-                    el.style.height = '';
-                    el.style.opacity = '1';
-                });
-            }
-        }
-        
-        function enterControlEditMode() {
-            optionsMenu.style.display = 'none';
-            controlsEditor.style.display = 'block';
-            const elementsToDrag = [dpad, accelerateButton, brakeButton];
-            const listeners = [];
-
-            elementsToDrag.forEach(el => {
-                controlsEditor.appendChild(el);
-                const listener = makeDraggable(el, controlConfig[el.id]);
-                listeners.push({el, listener});
-            });
-
-            const doneButton = document.createElement('button');
-            doneButton.textContent = 'DONE';
-            doneButton.className = 'menu-button';
-            doneButton.style.position = 'absolute';
-            doneButton.style.bottom = '5vh';
-            doneButton.style.left = '50%';
-            doneButton.style.transform = 'translateX(-50%)';
-            doneButton.onclick = () => {
-                listeners.forEach(({el, listener}) => el.removeEventListener('touchstart', listener));
-                controlsEditor.innerHTML = ''; // Clear children, including this button
-                controlsEditor.style.display = 'none';
-                optionsMenu.style.display = 'flex';
-                saveControlConfig();
-                applyControlConfig();
+            car.img.onload = startRaceSequence;
+            car.img.onerror = () => {
+                console.error("Car image failed to load.");
+                gameMessages.textContent = 'ERROR';
             };
-            controlsEditor.appendChild(doneButton);
-        }
-        
-        function makeDraggable(element, config) {
-            let offsetX, offsetY;
-            function onTouchStart(e) {
-                e.preventDefault();
-                const touch = e.targetTouches[0];
-                const rect = element.getBoundingClientRect();
-                offsetX = touch.clientX - rect.left;
-                offsetY = touch.clientY - rect.top;
-                window.addEventListener('touchmove', onTouchMove, { passive: false });
-                window.addEventListener('touchend', onTouchEnd, { passive: false });
-            }
-            function onTouchMove(e) {
-                e.preventDefault();
-                const touch = e.targetTouches[0];
-                let x = (touch.clientX - offsetX) / window.innerWidth * 100;
-                let y = (touch.clientY - offsetY) / window.innerHeight * 100;
-                const rect = element.getBoundingClientRect();
-                const wPercent = rect.width / window.innerWidth * 100;
-                const hPercent = rect.height / window.innerHeight * 100;
-                x = Math.max(0, Math.min(100 - wPercent, x));
-                y = Math.max(0, Math.min(100 - hPercent, y));
-                element.style.left = `${x}%`;
-                element.style.top = `${y}%`;
-                element.style.transform = 'none';
-            }
-            function onTouchEnd(e) {
-                const rect = element.getBoundingClientRect();
-                let finalX, finalY;
-                if (config.w) { // D-pad
-                    finalX = (rect.left / window.innerWidth) * 100;
-                    finalY = (rect.top / window.innerHeight) * 100;
-                } else { // Action buttons
-                    finalX = ((rect.left + rect.width / 2) / window.innerWidth) * 100;
-                    finalY = ((rect.top + rect.height / 2) / window.innerHeight) * 100;
-                }
-                config.x = finalX;
-                config.y = finalY;
-                window.removeEventListener('touchmove', onTouchMove);
-                window.removeEventListener('touchend', onTouchEnd);
-            }
-            element.addEventListener('touchstart', onTouchStart, { passive: false });
-            return onTouchStart; // Return the listener function so it can be removed
         }
 
-        // --- Start the game ---
-        init();
+        function setupTrack() {
+            const path = selectedTrack.path;
+            car.x = path[0].x;
+            car.y = path[0].y;
+            car.speed = 0;
+            
+            const p1 = path[0];
+            const p2 = path[1];
+            car.angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+            checkpoints = [];
+            for(let i = 0; i < path.length; i++) {
+                checkpoints.push({ ...path[i], passed: false });
+            }
+            currentCheckpoint = 0;
+            checkpoints[0].passed = true;
+        }
+
+        function gameLoop(timestamp) {
+            if (gameState !== 'RACING') return;
+
+            const deltaTime = (timestamp - lastTime) / 16.67;
+            lastTime = timestamp;
+            raceTimer += deltaTime * 16.67;
+
+            update(deltaTime);
+            draw();
+            updateHUD();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function update(dt) {
+            if (car.inputs.left) car.steer = -1;
+            else if (car.inputs.right) car.steer = 1;
+            else car.steer = 0;
+
+            if (car.inputs.accelerate) car.speed += car.stats.acceleration * dt;
+            else car.speed -= 0.0008 * dt;
+
+            if (car.inputs.brake) car.speed -= car.stats.braking * dt;
+
+            car.speed = Math.max(0, Math.min(car.speed, car.stats.topSpeed));
+            
+            if (car.speed > 0.1) {
+                car.angle += car.steer * car.stats.handling * (1 - car.speed / (car.stats.topSpeed * 1.5)) * dt;
+            }
+
+            car.x += Math.cos(car.angle) * car.speed * dt;
+            car.y += Math.sin(car.angle) * car.speed * dt;
+
+            if (!isOnTrack(car.x, car.y)) {
+                car.speed *= 0.98; 
+            }
+            
+            const nextCheckpointIndex = (currentCheckpoint + 1) % checkpoints.length;
+            const nextCheckpoint = checkpoints[nextCheckpointIndex];
+            const distToCheckpoint = Math.hypot(car.x - nextCheckpoint.x, car.y - nextCheckpoint.y);
+            
+            if(distToCheckpoint < 50) {
+                currentCheckpoint = nextCheckpointIndex;
+                checkpoints[currentCheckpoint].passed = true;
+
+                if(currentCheckpoint === 0) {
+                    const allPassed = checkpoints.slice(1).every(cp => cp.passed);
+                    if(allPassed) {
+                        currentLap++;
+                        if(currentLap > totalLaps) {
+                            endRace();
+                        } else {
+                           checkpoints.forEach((cp, i) => cp.passed = (i === 0));
+                        }
+                    }
+                }
+            }
+        }
+        
+        function endRace() {
+            gameState = 'FINISHED';
+            gameMessages.textContent = `FINISH! Time: ${hud.time.textContent}`;
+            setTimeout(resetToMainMenu, 5000);
+        }
+
+        function resetToMainMenu() {
+            gameArea.classList.add('hidden');
+            gameUI.classList.remove('hidden');
+            mainMenu.classList.remove('hidden');
+            trackSelection.classList.add('hidden');
+            pauseMenu.classList.add('hidden');
+            pauseMenu.classList.remove('flex');
+            selectedTeam = null;
+            selectedTrack = null;
+            document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            confirmTeamBtn.disabled = true;
+            confirmTrackBtn.disabled = true;
+            gameState = 'MENU';
+        }
+
+        function updateHUD() {
+            hud.time.textContent = (raceTimer / 1000).toFixed(2);
+            hud.lap.textContent = `${Math.min(currentLap, totalLaps)}/${totalLaps}`;
+        }
+
+        // --- DRAWING ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            
+            const cameraX = car.x - canvas.width / 2;
+            const cameraY = car.y - canvas.height / 2;
+            
+            ctx.translate(-cameraX, -cameraY);
+
+            ctx.fillStyle = selectedTrack.grassColor;
+            ctx.fillRect(cameraX, cameraY, canvas.width, canvas.height);
+            
+            drawTrackPath(selectedTrack.path, 80, selectedTrack.trackColor);
+            drawTrackPath(selectedTrack.path, 70, selectedTrack.kerbColor, [15, 15]);
+            drawTrackPath(selectedTrack.path, 68, selectedTrack.trackColor);
+
+            drawStartFinishLine();
+            drawCar();
+
+            ctx.restore();
+        }
+
+        function drawTrackPath(path, width, color, dash = []) {
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.closePath();
+            
+            ctx.lineWidth = width;
+            ctx.strokeStyle = color;
+            ctx.setLineDash(dash);
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawStartFinishLine() {
+            const p1 = selectedTrack.path[0];
+            const p2 = selectedTrack.path[selectedTrack.path.length - 1];
+            const angle = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+            const perpAngle = angle + Math.PI / 2;
+
+            ctx.save();
+            ctx.translate(p1.x, p1.y);
+            ctx.rotate(perpAngle);
+            
+            const trackWidth = 80;
+            for(let i = -trackWidth/2; i < trackWidth/2; i += 8) {
+                ctx.fillStyle = (Math.floor(i/8) % 2 === 0) ? 'white' : 'black';
+                ctx.fillRect(i, -4, 8, 8);
+            }
+            
+            ctx.restore();
+        }
+
+        function drawCar() {
+            if (!car.img || car.img.naturalWidth === 0) {
+                return;
+            }
+            ctx.save();
+            ctx.translate(car.x, car.y);
+            ctx.rotate(car.angle + Math.PI / 2);
+            ctx.drawImage(car.img, -car.width / 2, -car.height / 2, car.width, car.height);
+            ctx.restore();
+        }
+
+        function isOnTrack(px, py) {
+            let minDistanceSq = Infinity;
+            const path = selectedTrack.path;
+            
+            for (let i = 0; i < path.length; i++) {
+                const p1 = path[i];
+                const p2 = path[(i + 1) % path.length];
+                
+                const l2 = (p2.x - p1.x)**2 + (p2.y - p1.y)**2;
+                if (l2 === 0) {
+                    minDistanceSq = Math.min(minDistanceSq, (px - p1.x)**2 + (py - p1.y)**2);
+                    continue;
+                }
+                
+                let t = ((px - p1.x) * (p2.x - p1.x) + (py - p1.y) * (p2.y - p1.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+                
+                const closestX = p1.x + t * (p2.x - p1.x);
+                const closestY = p1.y + t * (p2.y - p1.y);
+                const distSq = (px - closestX)**2 + (py - closestY)**2;
+                minDistanceSq = Math.min(minDistanceSq, distSq);
+            }
+            
+            const trackWidth = 40; // Half track width
+            return minDistanceSq <= trackWidth * trackWidth;
+        }
+
+        // --- CONTROLS, LAYOUT & PAUSE ---
+        function handleKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowUp': case 'w': car.inputs.accelerate = true; break;
+                case 'ArrowDown': case 's': car.inputs.brake = true; break;
+                case 'ArrowLeft': case 'a': car.inputs.left = true; break;
+                case 'ArrowRight': case 'd': car.inputs.right = true; break;
+            }
+        }
+
+        function handleKeyUp(e) {
+            switch (e.key) {
+                case 'ArrowUp': case 'w': car.inputs.accelerate = false; break;
+                case 'ArrowDown': case 's': car.inputs.brake = false; break;
+                case 'ArrowLeft': case 'a': car.inputs.left = false; break;
+                case 'ArrowRight': case 'd': car.inputs.right = false; break;
+            }
+        }
+
+        function setupTouchControls() {
+            const controls = [
+                { id: 'accelerate', key: 'accelerate' },
+                { id: 'brake', key: 'brake' },
+                { id: 'steer-left', key: 'left' },
+                { id: 'steer-right', key: 'right' },
+            ];
+            controls.forEach(c => {
+                const el = document.getElementById(c.id);
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); car.inputs[c.key] = true; }, { passive: false });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); car.inputs[c.key] = false; }, { passive: false });
+                el.addEventListener('contextmenu', (e) => e.preventDefault());
+            });
+        }
+        
+        layoutToggle.addEventListener('click', () => {
+            gameContainer.classList.toggle('vertical');
+            gameContainer.classList.toggle('horizontal');
+            controlsWrapper.classList.toggle('vertical');
+            controlsWrapper.classList.toggle('horizontal');
+            resizeCanvas();
+        });
+
+        editControlsBtn.addEventListener('click', () => {
+            controlEditing = !controlEditing;
+            editControlsBtn.classList.toggle('bg-red-500', controlEditing);
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                btn.style.borderStyle = controlEditing ? 'dashed' : 'solid';
+                btn.style.borderColor = controlEditing ? 'red' : 'rgba(255, 255, 255, 0.7)';
+            });
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if (gameState === 'RACING') {
+                gameState = 'PAUSED';
+                cancelAnimationFrame(animationFrameId);
+                pauseMenu.classList.remove('hidden');
+                pauseMenu.classList.add('flex');
+            }
+        });
+
+        resumeBtn.addEventListener('click', () => {
+            if (gameState === 'PAUSED') {
+                gameState = 'RACING';
+                lastTime = performance.now(); // Reset timer to avoid jump
+                requestAnimationFrame(gameLoop);
+                pauseMenu.classList.add('hidden');
+                pauseMenu.classList.remove('flex');
+            }
+        });
+
+        restartRaceBtn.addEventListener('click', () => {
+            pauseMenu.classList.add('hidden');
+            pauseMenu.classList.remove('flex');
+            setupTrack();
+            startRaceSequence();
+        });
+
+        exitMenuBtn.addEventListener('click', resetToMainMenu);
+
+        // --- CONTROL CUSTOMIZATION ---
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            element.onmousedown = dragMouseDown;
+            element.ontouchstart = dragMouseDown;
+
+            function dragMouseDown(e) {
+                if (!controlEditing) return;
+                e = e || window.event;
+                e.preventDefault();
+                if (e.touches) {
+                    pos3 = e.touches[0].clientX;
+                    pos4 = e.touches[0].clientY;
+                } else {
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                }
+                document.onmouseup = closeDragElement;
+                document.ontouchend = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchmove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                let clientX, clientY;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                pos1 = pos3 - clientX;
+                pos2 = pos4 - clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+
+                const parentRect = element.parentElement.getBoundingClientRect();
+                const newTop = element.offsetTop - pos2;
+                const newLeft = element.offsetLeft - pos1;
+
+                element.style.top = `${Math.max(0, Math.min(newTop, parentRect.height - element.offsetHeight))}px`;
+                element.style.left = `${Math.max(0, Math.min(newLeft, parentRect.width - element.offsetWidth))}px`;
+                element.style.right = 'auto';
+                element.style.bottom = 'auto';
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+                saveControlPositions();
+            }
+        }
+
+        function saveControlPositions() {
+            const positions = {};
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                positions[btn.id] = { top: btn.style.top, left: btn.style.left };
+            });
+            localStorage.setItem('f1_control_positions', JSON.stringify(positions));
+        }
+
+        function loadControlPositions() {
+            const positions = JSON.parse(localStorage.getItem('f1_control_positions'));
+            if (positions) {
+                Object.keys(positions).forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn && positions[id].top && positions[id].left) {
+                        btn.style.top = positions[id].top;
+                        btn.style.left = positions[id].left;
+                        btn.style.right = 'auto';
+                        btn.style.bottom = 'auto';
+                    }
+                });
+            }
+        }
+
+        // --- UTILITY ---
+        function resizeCanvas() {
+            const wrapper = document.querySelector('.canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            if(gameState !== 'MENU') draw();
+        }
+
+        // --- INITIAL SETUP ---
+        window.addEventListener('resize', resizeCanvas);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            populateTeamSelection();
+            populateTrackSelection();
+            setupTouchControls();
+            document.querySelectorAll('.control-btn').forEach(makeDraggable);
+            loadControlPositions();
+        });
+
     </script>
 </body>
 </html>
-
-
