@@ -37,14 +37,36 @@
             height: 35%;
             padding: 1rem;
             flex-shrink: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            background-color: #111827; /* bg-gray-900 */
         }
         .controls-wrapper.horizontal {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             pointer-events: none;
+            display: block;
+        }
+        .controls-wrapper.horizontal .d-pad {
+            position: absolute;
+            bottom: 5%;
+            left: 2%;
+            width: 35%;
+            height: 30%;
+            max-width: 220px;
+            max-height: 150px;
+            pointer-events: auto;
+        }
+        .controls-wrapper.horizontal .action-buttons {
+            position: absolute;
+            bottom: 5%;
+            right: 2%;
+            width: 35%;
+            height: 40%;
+            max-width: 220px;
+            max-height: 180px;
+            pointer-events: auto;
         }
         .control-btn {
             background-color: rgba(0, 0, 0, 0.6);
@@ -58,18 +80,17 @@
             user-select: none;
             touch-action: manipulation;
             box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-            transition: background-color 0.1s;
+            transition: background-color: 0.1s;
             pointer-events: auto;
         }
         .control-btn:active {
             background-color: rgba(255, 255, 255, 0.5);
         }
         .d-pad, .action-buttons {
-            display: grid;
-            gap: 1rem;
+            position: relative;
+            width: 100%;
+            height: 100%;
         }
-        .d-pad { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
-        .action-buttons { grid-template-columns: 1fr; grid-template-rows: repeat(2, 1fr); }
         
         .modal {
             background-color: rgba(0, 0, 0, 0.85);
@@ -98,31 +119,27 @@
     <div id="gameUI" class="w-full h-screen flex items-center justify-center p-4">
         <!-- Main Menu -->
         <div id="mainMenu" class="text-center">
-            <!-- FIX: Added responsive text sizes -->
             <h1 class="text-5xl sm:text-6xl font-bold tracking-widest mb-4 text-red-500">ARCADE F1</h1>
             <p class="text-lg sm:text-xl mb-8 text-gray-300">Top-Down Racing</p>
-            <!-- FIX: Added responsive padding and text sizes -->
             <button id="startRaceBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 sm:py-4 sm:px-8 rounded-lg text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105">Start Race</button>
         </div>
 
         <!-- Team Selection -->
-        <div id="teamSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-center">
-            <!-- FIX: Added responsive text sizes -->
-            <h2 class="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8">Choose Your Team</h2>
+        <div id="teamSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-start overflow-y-auto">
+            <h2 class="text-3xl sm:text-4xl font-bold my-4 sm:my-8 flex-shrink-0">Choose Your Team</h2>
             <div id="teamGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-6xl">
                 <!-- Team cards will be injected here by JS -->
             </div>
-            <button id="confirmTeamBtn" class="mt-6 sm:mt-8 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>Next</button>
+            <button id="confirmTeamBtn" class="mt-6 sm:mt-8 mb-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed flex-shrink-0" disabled>Next</button>
         </div>
 
         <!-- Track Selection -->
-        <div id="trackSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-center">
-            <!-- FIX: Added responsive text sizes -->
-            <h2 class="text-3xl sm:text-4xl font-bold mb-6">Select a Track</h2>
+        <div id="trackSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-start overflow-y-auto">
+            <h2 class="text-3xl sm:text-4xl font-bold my-4 sm:my-6 flex-shrink-0">Select a Track</h2>
             <div id="trackGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-6xl">
                  <!-- Track cards will be injected here by JS -->
             </div>
-             <button id="confirmTrackBtn" class="mt-6 sm:mt-8 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>Race!</button>
+             <button id="confirmTrackBtn" class="mt-6 sm:mt-8 mb-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed flex-shrink-0" disabled>Race!</button>
         </div>
 
     </div>
@@ -135,6 +152,12 @@
                  <div id="hud" class="absolute top-2 left-2 text-2xl font-bold text-white" style="text-shadow: 0 0 5px black;">
                     <div>Time: <span id="time">0.00</span></div>
                     <div>Lap: <span id="lap">1/3</span></div>
+                    <!-- Tire Wear HUD Element -->
+                    <div class="mt-2">
+                        <div class="w-48 h-6 bg-gray-700 rounded-full overflow-hidden border-2 border-gray-500">
+                            <div id="tireWearBar" class="h-full bg-green-500 transition-all duration-100" style="width: 100%;"></div>
+                        </div>
+                    </div>
                 </div>
                  <!-- Pause Menu -->
                 <div id="pauseMenu" class="hidden absolute inset-0 modal flex-col items-center justify-center text-center">
@@ -146,23 +169,21 @@
                     </div>
                 </div>
             </div>
-            <div id="controlsWrapper" class="controls-wrapper vertical bg-gray-900">
-                 <div class="w-full h-full grid grid-cols-2 gap-4">
-                    <div class="d-pad relative">
-                         <div id="steer-left" class="control-btn absolute" style="width: 70px; height: 70px; left: 10%; top: 30%;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
-                        </div>
-                        <div id="steer-right" class="control-btn absolute" style="width: 70px; height: 70px; right: 10%; top: 30%;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
-                        </div>
+            <div id="controlsWrapper" class="controls-wrapper vertical">
+                <div class="d-pad">
+                     <div id="steer-left" class="control-btn absolute" style="width: 70px; height: 70px; left: 10%; top: 30%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
                     </div>
-                    <div class="action-buttons relative">
-                        <div id="accelerate" class="control-btn absolute" style="width: 80px; height: 80px; right: 25%; top: 5%;">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/></svg>
-                        </div>
-                        <div id="brake" class="control-btn absolute" style="width: 60px; height: 60px; right: 35%; bottom: 5%;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
-                        </div>
+                    <div id="steer-right" class="control-btn absolute" style="width: 70px; height: 70px; right: 10%; top: 30%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <div id="accelerate" class="control-btn absolute" style="width: 80px; height: 80px; right: 25%; top: 5%;">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/></svg>
+                    </div>
+                    <div id="brake" class="control-btn absolute" style="width: 60px; height: 60px; right: 35%; bottom: 5%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
                     </div>
                 </div>
             </div>
@@ -170,9 +191,6 @@
         <div id="settingsBar" class="absolute top-0 right-0 p-2 z-50 flex gap-2">
             <button id="pauseBtn" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/></svg>
-            </button>
-            <button id="layoutToggle" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5zm6 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM2.5 4a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm11-8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm0 2a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/></svg>
             </button>
              <button id="editControlsBtn" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/></svg>
@@ -200,6 +218,7 @@
         const hud = {
             time: document.getElementById('time'),
             lap: document.getElementById('lap'),
+            tireWearBar: document.getElementById('tireWearBar'),
         };
         const pauseMenu = document.getElementById('pauseMenu');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -207,7 +226,6 @@
         const restartRaceBtn = document.getElementById('restartRaceBtn');
         const exitMenuBtn = document.getElementById('exitMenuBtn');
 
-        const layoutToggle = document.getElementById('layoutToggle');
         const editControlsBtn = document.getElementById('editControlsBtn');
         const gameContainer = document.getElementById('gameContainer');
         const controlsWrapper = document.getElementById('controlsWrapper');
@@ -221,20 +239,20 @@
         let animationFrameId;
         
         const teams = [
-            { id: 'mercurio', name: 'Mercurio', color: '#00D2BE', stats: { acceleration: 0.001, topSpeed: 3.8, handling: 0.045, braking: 0.08 } },
-            { id: 'taurus', name: 'Taurus Racing', color: '#3671C6', stats: { acceleration: 0.0012, topSpeed: 3.6, handling: 0.05, braking: 0.07 } },
-            { id: 'stallions', name: 'Red Stallions', color: '#DC0000', stats: { acceleration: 0.0011, topSpeed: 4.0, handling: 0.04, braking: 0.06 } },
-            { id: 'mclaren', name: 'McLaren Papaya', color: '#FF8700', stats: { acceleration: 0.0009, topSpeed: 3.9, handling: 0.048, braking: 0.075 } },
-            { id: 'aston', name: 'Aston Green', color: '#006F62', stats: { acceleration: 0.0013, topSpeed: 3.5, handling: 0.046, braking: 0.09 } },
-            { id: 'alpine', name: 'Azure Alpine', color: '#0090FF', stats: { acceleration: 0.001, topSpeed: 3.7, handling: 0.047, braking: 0.07 } },
+            { id: 'mercurio', name: 'Mercurio', color: '#00D2BE', stats: { acceleration: 0.018, topSpeed: 3.8, handling: 0.045, braking: 0.05, tireWearRate: 1.0 } },
+            { id: 'taurus', name: 'Taurus Racing', color: '#3671C6', stats: { acceleration: 0.020, topSpeed: 3.6, handling: 0.05, braking: 0.045, tireWearRate: 0.85 } },
+            { id: 'stallions', name: 'Red Stallions', color: '#DC0000', stats: { acceleration: 0.019, topSpeed: 4.0, handling: 0.04, braking: 0.04, tireWearRate: 1.2 } },
+            { id: 'mclaren', name: 'McLaren Papaya', color: '#FF8700', stats: { acceleration: 0.017, topSpeed: 3.9, handling: 0.048, braking: 0.05, tireWearRate: 1.1 } },
+            { id: 'aston', name: 'Aston Green', color: '#006F62', stats: { acceleration: 0.022, topSpeed: 3.5, handling: 0.046, braking: 0.06, tireWearRate: 1.15 } },
+            { id: 'alpine', name: 'Azure Alpine', color: '#0090FF', stats: { acceleration: 0.018, topSpeed: 3.7, handling: 0.047, braking: 0.045, tireWearRate: 0.95 } },
         ];
 
         const tracks = [
-            { id: 'monza', name: 'Monza', grassColor: '#4A6A4A', trackColor: '#555555', kerbColor: '#D3D3D3', path: [ {x:200,y:450}, {x:400,y:450}, {x:450,y:425}, {x:425,y:400}, {x:550,y:400}, {x:650,y:350}, {x:850,y:150}, {x:800,y:100}, {x:700,y:100}, {x:600,y:150}, {x:500,y:100}, {x:400,y:150}, {x:200,y:150}, {x:150,y:200}, {x:150,y:350}, {x:175,y:425} ] },
-            { id: 'silverstone', name: 'Silverstone', grassColor: '#557555', trackColor: '#606060', kerbColor: '#E0E0E0', path: [ {x:200,y:450},{x:350,y:450},{x:400,y:400},{x:400,y:200},{x:450,y:150},{x:750,y:150},{x:800,y:200},{x:800,y:350},{x:750,y:400},{x:600,y:400},{x:550,y:350},{x:250,y:350},{x:200,y:400}, ] },
-            { id: 'spa', name: 'Spa', grassColor: '#3E5E3E', trackColor: '#4C4C4C', kerbColor: '#C8C8C8', path: [ {x:200,y:150},{x:500,y:150},{x:600,y:100},{x:800,y:100},{x:900,y:200},{x:900,y:400},{x:800,y:500},{x:500,y:500},{x:450,y:450},{x:450,y:350},{x:400,y:300},{x:250,y:300},{x:200,y:250}, ] },
-            { id: 'suzuka', name: 'Suzuka', grassColor: '#4F6F4F', trackColor: '#5A5A5A', kerbColor: '#DBDBDB', path: [ {x:150,y:450}, {x:400,y:450}, {x:450,y:400}, {x:400,y:350}, {x:450,y:300}, {x:650,y:300}, {x:750,y:350}, {x:800,y:250}, {x:750,y:150}, {x:500,y:150}, {x:450,y:100}, {x:250,y:100}, {x:200,y:150}, {x:200,y:250}, {x:250,y:300}, {x:150,y:350} ] },
-            { id: 'bahrain', name: 'Bahrain', grassColor: '#A99572', trackColor: '#686868', kerbColor: '#F0F0F0', path: [ {x:200,y:450},{x:800,y:450},{x:850,y:400},{x:850,y:350},{x:800,y:300},{x:700,y:300},{x:650,y:250},{x:650,y:150},{x:700,y:100},{x:400,y:100},{x:350,y:150},{x:300,y:150},{x:250,y:200},{x:250,y:350},{x:200,y:400}, ] },
+            { id: 'monza', name: 'Monza', grassColor: '#4A6A4A', trackColor: '#555555', kerbColor: '#D3D3D3', path: [ {x:750,y:675}, {x:1200,y:675}, {x:1275,y:600}, {x:1275,y:225}, {x:1200,y:150}, {x:1050,y:150}, {x:900,y:225}, {x:750,y:150}, {x:600,y:225}, {x:300,y:225}, {x:225,y:300}, {x:225,y:525}, {x:263,y:638}, {x:300,y:675}, {x:750,y:675} ], pitLanePath: [ {x: 825, y: 675}, {x: 825, y: 770}, {x: 1125, y: 770}, {x: 1125, y: 675} ], pitBoxCenter: {x: 975, y: 770} },
+            { id: 'silverstone', name: 'Silverstone', grassColor: '#557555', trackColor: '#606060', kerbColor: '#E0E0E0', path: [ {x:1125, y: 525}, {x:1125, y:675}, {x:900, y:750}, {x:600, y:750}, {x:300, y:750}, {x:375, y:600}, {x:600, y:600}, {x:750, y:450}, {x:750, y:300}, {x:825, y:225}, {x:1050, y:225}, {x:1125, y:375}, {x:1125, y: 525} ], pitLanePath: [ {x: 1125, y: 375}, {x: 1220, y: 425}, {x: 1220, y: 625}, {x: 1125, y: 675} ], pitBoxCenter: {x: 1220, y: 525} },
+            { id: 'spa', name: 'Spa', grassColor: '#3E5E3E', trackColor: '#4C4C4C', kerbColor: '#C8C8C8', path: [ {x:1350,y:450}, {x:1200,y:750}, {x:750,y:750}, {x:675,y:675}, {x:675,y:525}, {x:600,y:450}, {x:375,y:450}, {x:300,y:375}, {x:300,y:225}, {x:750,y:225}, {x:900,y:150}, {x:1200,y:150}, {x:1350,y:300}, {x:1350,y:450} ], pitLanePath: [ {x: 900, y: 150}, {x: 950, y: 55}, {x: 1150, y: 55}, {x: 1200, y: 150} ], pitBoxCenter: {x: 1050, y: 55} },
+            { id: 'suzuka', name: 'Suzuka', grassColor: '#4F6F4F', trackColor: '#5A5A5A', kerbColor: '#DBDBDB', path: [ {x:975,y:450}, {x:1125,y:525}, {x:1200,y:375}, {x:1125,y:225}, {x:750,y:225}, {x:675,y:150}, {x:375,y:150}, {x:300,y:225}, {x:300,y:375}, {x:375,y:450}, {x:225,y:525}, {x:225,y:675}, {x:600,y:675}, {x:675,y:600}, {x:600,y:525}, {x:675,y:450}, {x:975,y:450} ], pitLanePath: [ {x: 300, y: 250}, {x: 205, y: 275}, {x: 205, y: 325}, {x: 300, y: 350} ], pitBoxCenter: {x: 205, y: 300} },
+            { id: 'bahrain', name: 'Bahrain', grassColor: '#A99572', trackColor: '#686868', kerbColor: '#F0F0F0', path: [ {x:825, y:150}, {x:600,y:150}, {x:525,y:225}, {x:450,y:225}, {x:375,y:300}, {x:375,y:525}, {x:300,y:600}, {x:300,y:675}, {x:1200,y:675}, {x:1275,y:600}, {x:1275,y:525}, {x:1200,y:450}, {x:1050,y:450}, {x:975,y:375}, {x:975,y:225}, {x:1050,y:150}, {x:825, y:150} ], pitLanePath: [ {x: 450, y: 675}, {x: 500, y: 770}, {x: 1075, y: 770}, {x: 1125, y: 675} ], pitBoxCenter: {x: 788, y: 770} },
         ];
 
         // --- CAR & PHYSICS ---
@@ -245,14 +263,18 @@
             steer: 0,
             stats: { ...teams[0].stats }, // Default stats
             inputs: { accelerate: false, brake: false, left: false, right: false },
-            img: new Image()
+            img: new Image(),
+            tireWear: 100,
+            inPitLane: false,
+            isPitting: false,
+            justExitedPit: false,
         };
 
         // --- GAME LOOP & TIMING ---
         let lastTime = 0;
         let raceTimer = 0;
         let currentLap = 1;
-        const totalLaps = 3;
+        const totalLaps = 15;
         let checkpoints = [];
         let currentCheckpoint = 0;
 
@@ -261,9 +283,10 @@
             teamGrid.innerHTML = teams.map(t => {
                 const statValue = (val, max) => Math.max(0, Math.min(max, Math.round(val)));
                 const topSpeedStat = statValue(t.stats.topSpeed * 2.5, 10);
-                const accelerationStat = statValue(t.stats.acceleration * 8000, 10);
+                const accelerationStat = statValue(t.stats.acceleration * 450, 10);
                 const handlingStat = statValue(t.stats.handling * 200, 10);
-                const brakingStat = statValue(t.stats.braking * 120, 10);
+                const brakingStat = statValue(t.stats.braking * 160, 10);
+                const tireCareStat = statValue((1.2 - t.stats.tireWearRate) * 25, 10);
 
                 return `
                 <div class="team-card border-4 rounded-lg p-4 cursor-pointer bg-gray-800" data-team-id="${t.id}" style="--team-color: ${t.color}; border-color: ${t.color};">
@@ -273,6 +296,7 @@
                         <p>Acceleration: <span class="font-bold float-right">${'█'.repeat(accelerationStat)}${'░'.repeat(10 - accelerationStat)}</span></p>
                         <p>Handling: <span class="font-bold float-right">${'█'.repeat(handlingStat)}${'░'.repeat(10 - handlingStat)}</span></p>
                         <p>Braking: <span class="font-bold float-right">${'█'.repeat(brakingStat)}${'░'.repeat(10 - brakingStat)}</span></p>
+                        <p>Tire Care: <span class="font-bold float-right">${'█'.repeat(tireCareStat)}${'░'.repeat(10 - tireCareStat)}</span></p>
                     </div>
                 </div>
                 `;
@@ -390,13 +414,17 @@
             car.x = path[0].x;
             car.y = path[0].y;
             car.speed = 0;
+            car.tireWear = 100;
+            car.isPitting = false;
+            car.inPitLane = false;
+            car.justExitedPit = false;
             
             const p1 = path[0];
             const p2 = path[1];
             car.angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
             checkpoints = [];
-            for(let i = 0; i < path.length; i++) {
+            for(let i = 0; i < path.length - 1; i++) { // Use path.length - 1 to ignore duplicate end point
                 checkpoints.push({ ...path[i], passed: false });
             }
             currentCheckpoint = 0;
@@ -418,6 +446,28 @@
         }
 
         function update(dt) {
+            car.inPitLane = isOnPitLane(car.x, car.y);
+            const distToPitBox = Math.hypot(car.x - selectedTrack.pitBoxCenter.x, car.y - selectedTrack.pitBoxCenter.y);
+
+            if (car.justExitedPit && !car.inPitLane) {
+                car.justExitedPit = false;
+            }
+
+            if (car.inPitLane && !car.isPitting && !car.justExitedPit && distToPitBox < 40 && car.speed < 0.5 && car.tireWear < 99) {
+                car.isPitting = true;
+            }
+            
+            if (car.isPitting) {
+                car.speed = 0;
+                car.tireWear += 2.0 * dt;
+                if (car.tireWear >= 100) {
+                    car.tireWear = 100;
+                    car.isPitting = false;
+                    car.justExitedPit = true;
+                }
+                return;
+            }
+
             if (car.inputs.left) car.steer = -1;
             else if (car.inputs.right) car.steer = 1;
             else car.steer = 0;
@@ -427,38 +477,55 @@
 
             if (car.inputs.brake) car.speed -= car.stats.braking * dt;
 
-            car.speed = Math.max(0, Math.min(car.speed, car.stats.topSpeed));
+            const wearPenalty = 0.5 + (car.tireWear / 100) * 0.5;
+            const currentHandling = car.stats.handling * wearPenalty;
+
+            if (car.inPitLane) {
+                car.speed = Math.max(0, Math.min(car.speed, 1.5));
+            } else {
+                car.speed = Math.max(0, Math.min(car.speed, car.stats.topSpeed));
+            }
             
             if (car.speed > 0.1) {
-                car.angle += car.steer * car.stats.handling * (1 - car.speed / (car.stats.topSpeed * 1.5)) * dt;
+                car.angle += car.steer * currentHandling * (1 - car.speed / (car.stats.topSpeed * 1.5)) * dt;
             }
 
             car.x += Math.cos(car.angle) * car.speed * dt;
             car.y += Math.sin(car.angle) * car.speed * dt;
 
-            if (!isOnTrack(car.x, car.y)) {
-                car.speed *= 0.98; 
+            if (car.speed > 0.1) {
+                const baseWear = 0.008;
+                const speedWear = car.speed * 0.002;
+                const turnWear = Math.abs(car.steer) * car.speed * 0.005;
+                let totalWear = (baseWear + speedWear + turnWear) * car.stats.tireWearRate * dt;
+                
+                if (!isOnTrack(car.x, car.y) && !car.inPitLane) {
+                    car.speed *= 0.98; 
+                    totalWear *= 5;
+                }
+
+                car.tireWear -= totalWear;
+                car.tireWear = Math.max(0, car.tireWear);
             }
             
             const nextCheckpointIndex = (currentCheckpoint + 1) % checkpoints.length;
             const nextCheckpoint = checkpoints[nextCheckpointIndex];
             const distToCheckpoint = Math.hypot(car.x - nextCheckpoint.x, car.y - nextCheckpoint.y);
             
-            if(distToCheckpoint < 50) {
-                currentCheckpoint = nextCheckpointIndex;
-                checkpoints[currentCheckpoint].passed = true;
-
-                if(currentCheckpoint === 0) {
-                    const allPassed = checkpoints.slice(1).every(cp => cp.passed);
-                    if(allPassed) {
+            if(distToCheckpoint < 75) {
+                if (nextCheckpointIndex === 0 && currentCheckpoint === checkpoints.length - 1) {
+                    const allPassed = checkpoints.every(cp => cp.passed);
+                    if (allPassed) {
                         currentLap++;
-                        if(currentLap > totalLaps) {
+                        if (currentLap > totalLaps) {
                             endRace();
                         } else {
-                           checkpoints.forEach((cp, i) => cp.passed = (i === 0));
+                            checkpoints.forEach((cp, i) => cp.passed = (i === 0));
                         }
                     }
                 }
+                currentCheckpoint = nextCheckpointIndex;
+                checkpoints[currentCheckpoint].passed = true;
             }
         }
         
@@ -486,6 +553,15 @@
         function updateHUD() {
             hud.time.textContent = (raceTimer / 1000).toFixed(2);
             hud.lap.textContent = `${Math.min(currentLap, totalLaps)}/${totalLaps}`;
+            
+            hud.tireWearBar.style.width = `${car.tireWear}%`;
+            if (car.tireWear < 30) {
+                hud.tireWearBar.style.backgroundColor = '#ef4444'; // red-500
+            } else if (car.tireWear < 60) {
+                hud.tireWearBar.style.backgroundColor = '#f59e0b'; // amber-500
+            } else {
+                hud.tireWearBar.style.backgroundColor = '#22c55e'; // green-500
+            }
         }
 
         // --- DRAWING ---
@@ -501,9 +577,12 @@
             ctx.fillStyle = selectedTrack.grassColor;
             ctx.fillRect(cameraX, cameraY, canvas.width, canvas.height);
             
-            drawTrackPath(selectedTrack.path, 80, selectedTrack.trackColor);
-            drawTrackPath(selectedTrack.path, 70, selectedTrack.kerbColor, [15, 15]);
-            drawTrackPath(selectedTrack.path, 68, selectedTrack.trackColor);
+            drawTrackPath(selectedTrack.path, 120, selectedTrack.trackColor);
+            drawTrackPath(selectedTrack.path, 105, selectedTrack.kerbColor, [22, 22]);
+            drawTrackPath(selectedTrack.path, 102, selectedTrack.trackColor);
+
+            drawTrackPath(selectedTrack.pitLanePath, 50, '#4a4a4a');
+            drawPitBoxes(selectedTrack.pitBoxCenter);
 
             drawStartFinishLine();
             drawCar();
@@ -511,13 +590,36 @@
             ctx.restore();
         }
 
+        function drawPitBoxes(center) {
+            const pitBoxWidth = 30;
+            const pitBoxLength = 60;
+            
+            const teamIndex = teams.findIndex(t => t.id === selectedTeam.id);
+            const boxX = center.x;
+            const boxY = center.y;
+
+            ctx.fillStyle = selectedTeam.color;
+            ctx.globalAlpha = 0.7;
+            ctx.fillRect(boxX - pitBoxLength / 2, boxY - pitBoxWidth / 2, pitBoxLength, pitBoxWidth);
+            
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 1.0;
+            ctx.strokeRect(boxX - pitBoxLength / 2, boxY - pitBoxWidth / 2, pitBoxLength, pitBoxWidth);
+        }
+
         function drawTrackPath(path, width, color, dash = []) {
+            if (!path || path.length < 2) return;
             ctx.beginPath();
             ctx.moveTo(path[0].x, path[0].y);
             for (let i = 1; i < path.length; i++) {
                 ctx.lineTo(path[i].x, path[i].y);
             }
-            ctx.closePath();
+            
+            const isLoop = Math.hypot(path[0].x - path[path.length - 1].x, path[0].y - path[path.length - 1].y) < 1;
+            if (isLoop) {
+                ctx.closePath();
+            }
             
             ctx.lineWidth = width;
             ctx.strokeStyle = color;
@@ -530,18 +632,18 @@
 
         function drawStartFinishLine() {
             const p1 = selectedTrack.path[0];
-            const p2 = selectedTrack.path[selectedTrack.path.length - 1];
-            const angle = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+            const p2 = selectedTrack.path[1]; // Use the next point for direction
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
             const perpAngle = angle + Math.PI / 2;
 
             ctx.save();
             ctx.translate(p1.x, p1.y);
             ctx.rotate(perpAngle);
             
-            const trackWidth = 80;
-            for(let i = -trackWidth/2; i < trackWidth/2; i += 8) {
-                ctx.fillStyle = (Math.floor(i/8) % 2 === 0) ? 'white' : 'black';
-                ctx.fillRect(i, -4, 8, 8);
+            const trackWidth = 120;
+            for(let i = -trackWidth/2; i < trackWidth/2; i += 12) {
+                ctx.fillStyle = (Math.floor(i/12) % 2 === 0) ? 'white' : 'black';
+                ctx.fillRect(i, -6, 12, 12);
             }
             
             ctx.restore();
@@ -558,13 +660,11 @@
             ctx.restore();
         }
 
-        function isOnTrack(px, py) {
+        function isPointOnLine(px, py, path, halfWidth) {
             let minDistanceSq = Infinity;
-            const path = selectedTrack.path;
-            
-            for (let i = 0; i < path.length; i++) {
+            for (let i = 0; i < path.length - 1; i++) {
                 const p1 = path[i];
-                const p2 = path[(i + 1) % path.length];
+                const p2 = path[i + 1];
                 
                 const l2 = (p2.x - p1.x)**2 + (p2.y - p1.y)**2;
                 if (l2 === 0) {
@@ -580,9 +680,15 @@
                 const distSq = (px - closestX)**2 + (py - closestY)**2;
                 minDistanceSq = Math.min(minDistanceSq, distSq);
             }
-            
-            const trackWidth = 40; // Half track width
-            return minDistanceSq <= trackWidth * trackWidth;
+            return minDistanceSq <= halfWidth * halfWidth;
+        }
+
+        function isOnTrack(px, py) {
+            return isPointOnLine(px, py, selectedTrack.path, 60);
+        }
+        
+        function isOnPitLane(px, py) {
+            return isPointOnLine(px, py, selectedTrack.pitLanePath, 25);
         }
 
         // --- CONTROLS, LAYOUT & PAUSE ---
@@ -619,13 +725,21 @@
             });
         }
         
-        layoutToggle.addEventListener('click', () => {
-            gameContainer.classList.toggle('vertical');
-            gameContainer.classList.toggle('horizontal');
-            controlsWrapper.classList.toggle('vertical');
-            controlsWrapper.classList.toggle('horizontal');
-            resizeCanvas();
-        });
+        function handleOrientationChange(e) {
+            const isPortrait = e.matches;
+            if (isPortrait) {
+                gameContainer.classList.add('vertical');
+                gameContainer.classList.remove('horizontal');
+                controlsWrapper.classList.add('vertical');
+                controlsWrapper.classList.remove('horizontal');
+            } else {
+                gameContainer.classList.remove('vertical');
+                gameContainer.classList.add('horizontal');
+                controlsWrapper.classList.remove('vertical');
+                controlsWrapper.classList.add('horizontal');
+            }
+            setTimeout(resizeCanvas, 100);
+        }
 
         editControlsBtn.addEventListener('click', () => {
             controlEditing = !controlEditing;
@@ -764,6 +878,10 @@
             setupTouchControls();
             document.querySelectorAll('.control-btn').forEach(makeDraggable);
             loadControlPositions();
+            
+            const orientationQuery = window.matchMedia("(orientation: portrait)");
+            handleOrientationChange(orientationQuery); // Set initial state
+            orientationQuery.addEventListener('change', handleOrientationChange);
         });
 
     </script>
