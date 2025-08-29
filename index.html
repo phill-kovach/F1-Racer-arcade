@@ -187,11 +187,16 @@
                 </div>
                  <!-- Pause Menu -->
                 <div id="pauseMenu" class="hidden absolute inset-0 modal flex-col items-center justify-center text-center">
-                    <h2 class="text-6xl font-bold mb-8">PAUSED</h2>
-                    <div class="flex flex-col gap-4">
+                    <h2 id="pauseTitle" class="text-6xl font-bold mb-8">PAUSED</h2>
+                    <div id="pauseActions" class="flex flex-col gap-4">
                         <button id="resumeBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Resume</button>
                         <button id="restartRaceBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Restart Race</button>
+                        <button id="editControlsBtnPause" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Edit Controls</button>
                         <button id="exitMenuBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Exit to Menu</button>
+                    </div>
+                    <div id="editActions" class="hidden flex-col gap-4">
+                        <button id="doneEditingBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Done Editing</button>
+                        <button id="resetControlsBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Reset Layout</button>
                     </div>
                 </div>
             </div>
@@ -218,15 +223,11 @@
             <button id="pauseBtn" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/></svg>
             </button>
-             <button id="editControlsBtn" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/></svg>
-            </button>
         </div>
     </div>
 
 
     <script>
-        // --- DOM ELEMENTS ---
         const gameUI = document.getElementById('gameUI');
         const mainMenu = document.getElementById('mainMenu');
         const teamSelection = document.getElementById('teamSelection');
@@ -253,8 +254,14 @@
         const restartRaceBtn = document.getElementById('restartRaceBtn');
         const exitMenuBtn = document.getElementById('exitMenuBtn');
 
-        const editControlsBtn = document.getElementById('editControlsBtn');
-        const gameContainer = document.getElementById('gameContainer');
+        // New control editing elements
+        const editControlsBtnPause = document.getElementById('editControlsBtnPause');
+        const doneEditingBtn = document.getElementById('doneEditingBtn');
+        const resetControlsBtn = document.getElementById('resetControlsBtn');
+        const pauseActions = document.getElementById('pauseActions');
+        const editActions = document.getElementById('editActions');
+        const pauseTitle = document.getElementById('pauseTitle');
+
         const controlsWrapper = document.getElementById('controlsWrapper');
         
         // --- GAME CONFIG & STATE ---
@@ -266,6 +273,13 @@
         let animationFrameId;
         let aiCars = [];
         
+        const defaultControlLayout = {
+            'steer-left': { top: '30%', left: '10%', width: '70px', height: '70px', right: 'auto', bottom: 'auto' },
+            'steer-right': { top: '30%', right: '10%', width: '70px', height: '70px', left: 'auto', bottom: 'auto' },
+            'accelerate': { top: '5%', right: '25%', width: '80px', height: '80px', left: 'auto', bottom: 'auto' },
+            'brake': { bottom: '5%', right: '35%', width: '60px', height: '60px', top: 'auto', left: 'auto' }
+        };
+
         const teams = [
             { id: 'mercurio', name: 'Mercurio', color: '#00D2BE', stats: { acceleration: 0.018, topSpeed: 3.8, handling: 0.045, braking: 0.05, tireWearRate: 1.0 } },
             { id: 'taurus', name: 'Taurus Racing', color: '#3671C6', stats: { acceleration: 0.020, topSpeed: 3.6, handling: 0.05, braking: 0.045, tireWearRate: 0.85 } },
@@ -304,8 +318,6 @@
             justExitedPit: false,
             lap: 1,
             currentCheckpoint: 0,
-            hasCrossedHalfway: false,
-            prev_x: 0, prev_y: 0, // Store previous position for lap tracking
         };
 
         // --- GAME LOOP & TIMING ---
@@ -450,8 +462,7 @@
             Object.assign(car, {
                 x: path[0].x, y: path[0].y, speed: 0, tireWear: 100,
                 isPitting: false, inPitLane: false, justExitedPit: false,
-                lap: 1, currentCheckpoint: 0, hasCrossedHalfway: false,
-                prev_x: path[0].x, prev_y: path[0].y,
+                lap: 1, currentCheckpoint: 0,
             });
             
             const p1 = path[0];
@@ -485,9 +496,6 @@
                     lap: 1,
                     currentCheckpoint: 0,
                     tireWear: 100,
-                    hasCrossedHalfway: false,
-                    prev_x: car.x + offsetX,
-                    prev_y: car.y + offsetY,
                 };
                 const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 36"><path d="M10 0 L20 30 L18 36 L14 32 L6 32 L2 36 L0 30 Z" fill="${team.color}" stroke="black" stroke-width="1"/><path d="M8 20 L12 20 L12 28 L8 28 Z" fill="black"/><path d="M4 4 L16 4 L14 10 L6 10 Z" fill="white" stroke="black" stroke-width="0.5"/><path d="M4 28 L2 34" fill="none" stroke="black" stroke-width="2"/><path d="M16 28 L18 34" fill="none" stroke="black" stroke-width="2"/></svg>`;
                 aiCar.img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
@@ -519,10 +527,6 @@
 
         // --- Shared Physics Engine for ALL cars ---
         function applyPhysics(currentCar, inputs, dt) {
-            // Store previous position before updating
-            currentCar.prev_x = currentCar.x;
-            currentCar.prev_y = currentCar.y;
-
             if (inputs.accelerate) currentCar.speed += currentCar.stats.acceleration * dt;
             else currentCar.speed -= 0.0008 * dt; 
             if (inputs.brake) currentCar.speed -= currentCar.stats.braking * dt;
@@ -643,46 +647,22 @@
         }
 
         function updateCheckpoints(currentCar) {
-            // This function uses a more robust "line crossing" detection instead of simple distance checks.
-            // This prevents issues where cutting a corner slightly could cause a checkpoint to be missed.
-            if (currentCar.speed < 0.1) return;
-
+            // This is a simplified, more forgiving checkpoint system based on distance.
             const nextCheckpointIndex = (currentCar.currentCheckpoint + 1) % checkpoints.length;
-            const targetCheckpoint = checkpoints[nextCheckpointIndex];
-            const currentCheckpoint = checkpoints[currentCar.currentCheckpoint];
+            const target = checkpoints[nextCheckpointIndex];
+            const distToTarget = Math.hypot(currentCar.x - target.x, currentCar.y - target.y);
 
-            // Vector for the current track segment the car is on
-            const trackVectorX = targetCheckpoint.x - currentCheckpoint.x;
-            const trackVectorY = targetCheckpoint.y - currentCheckpoint.y;
+            // Using a generous radius to make sure checkpoints are not missed when cutting corners.
+            const checkpointRadius = 125;
 
-            // Vector from the target checkpoint to the car's previous position
-            const prevVectorX = currentCar.prev_x - targetCheckpoint.x;
-            const prevVectorY = currentCar.prev_y - targetCheckpoint.y;
-
-            // Vector from the target checkpoint to the car's current position
-            const currVectorX = currentCar.x - targetCheckpoint.x;
-            const currVectorY = currentCar.y - targetCheckpoint.y;
-
-            // By comparing the dot product of the car's position relative to the track segment,
-            // we can see if it has "crossed" the imaginary line at the checkpoint.
-            const dotPrev = prevVectorX * trackVectorX + prevVectorY * trackVectorY;
-            const dotCurr = currVectorX * trackVectorX + currVectorY * trackVectorY;
-
-            // A sign change from negative to positive means the car has crossed the line.
-            // We also check if the car is on the track to avoid false positives.
-            if (dotPrev < 0 && dotCurr >= 0 && isPointOnLine(currentCar.x, currentCar.y, selectedTrack.path, 150)) {
+            if (distToTarget < checkpointRadius) {
+                const prevCheckpoint = currentCar.currentCheckpoint;
                 currentCar.currentCheckpoint = nextCheckpointIndex;
 
-                // Set a flag once the car is past the 75% mark of the lap.
-                // This prevents counting a lap by driving backwards over the finish line.
-                if (currentCar.currentCheckpoint > checkpoints.length * 0.75) {
-                    currentCar.hasCrossedHalfway = true;
-                }
-                
-                // If the car crosses the finish line (checkpoint 0) and has completed most of the lap, count the lap.
-                if (currentCar.currentCheckpoint === 0 && currentCar.hasCrossedHalfway) {
+                // To count a lap, the car must cross the finish line (checkpoint 0)
+                // after having passed the final checkpoint. This prevents counting laps by driving backwards.
+                if (currentCar.currentCheckpoint === 0 && prevCheckpoint === checkpoints.length - 1) {
                     currentCar.lap++;
-                    currentCar.hasCrossedHalfway = false; // Reset for the new lap
                     if (currentCar.id === 'player' && currentCar.lap > totalLaps) {
                         endRace();
                     }
@@ -958,12 +938,6 @@
             setTimeout(resizeCanvas, 100);
         }
 
-        editControlsBtn.addEventListener('click', () => {
-            controlEditing = !controlEditing;
-            controlsWrapper.classList.toggle('editing-active', controlEditing);
-            editControlsBtn.classList.toggle('bg-red-500', controlEditing);
-        });
-
         pauseBtn.addEventListener('click', () => {
             if (gameState === 'RACING') {
                 gameState = 'PAUSED';
@@ -991,6 +965,44 @@
         });
 
         exitMenuBtn.addEventListener('click', resetToMainMenu);
+
+        // --- NEW CONTROL EDITING FLOW ---
+        editControlsBtnPause.addEventListener('click', () => {
+            controlEditing = true;
+            controlsWrapper.classList.add('editing-active');
+            pauseActions.classList.add('hidden');
+            editActions.classList.remove('hidden');
+            editActions.classList.add('flex');
+            pauseTitle.textContent = "EDIT CONTROLS";
+        });
+
+        doneEditingBtn.addEventListener('click', () => {
+            controlEditing = false;
+            controlsWrapper.classList.remove('editing-active');
+            pauseActions.classList.remove('hidden');
+            editActions.classList.add('hidden');
+            editActions.classList.remove('flex');
+            pauseTitle.textContent = "PAUSED";
+            saveControlLayout();
+        });
+
+        resetControlsBtn.addEventListener('click', () => {
+            localStorage.removeItem('f1_control_layout');
+            // Apply default styles directly
+            Object.keys(defaultControlLayout).forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    // Reset all positional properties before applying defaults
+                    btn.style.top = '';
+                    btn.style.left = '';
+                    btn.style.right = '';
+                    btn.style.bottom = '';
+                    // Apply defaults from the constant
+                    Object.assign(btn.style, defaultControlLayout[id]);
+                }
+            });
+        });
+
 
         // --- CONTROL CUSTOMIZATION ---
         function makeDraggable(element) {
@@ -1059,7 +1071,7 @@
                 document.onmousemove = null;
                 document.ontouchend = null;
                 document.ontouchmove = null;
-                saveControlLayout();
+                // Saving happens on "Done" now, not after every drag
             }
         }
 
@@ -1119,7 +1131,7 @@
                 document.onmousemove = null;
                 document.ontouchend = null;
                 document.ontouchmove = null;
-                saveControlLayout();
+                // Saving happens on "Done" now, not after every resize
             }
         }
 
@@ -1130,7 +1142,9 @@
                     top: btn.style.top,
                     left: btn.style.left,
                     width: btn.style.width,
-                    height: btn.style.height
+                    height: btn.style.height,
+                    right: 'auto', // Explicitly set right/bottom to auto
+                    bottom: 'auto' // to override default inline styles
                 };
             });
             localStorage.setItem('f1_control_layout', JSON.stringify(layout));
@@ -1143,16 +1157,15 @@
                     const btn = document.getElementById(id);
                     if (btn) {
                         const styles = layout[id];
-                        if (styles.top && styles.left) {
-                            btn.style.top = styles.top;
-                            btn.style.left = styles.left;
-                            btn.style.right = 'auto';
-                            btn.style.bottom = 'auto';
-                        }
-                        if (styles.width && styles.height) {
-                            btn.style.width = styles.width;
-                            btn.style.height = styles.height;
-                        }
+                        Object.assign(btn.style, styles);
+                    }
+                });
+            } else {
+                // If no layout is saved, apply the default one on load.
+                 Object.keys(defaultControlLayout).forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        Object.assign(btn.style, defaultControlLayout[id]);
                     }
                 });
             }
@@ -1259,3 +1272,4 @@
     </script>
 </body>
 </html>
+
