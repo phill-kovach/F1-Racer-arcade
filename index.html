@@ -4,8 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Arcade F1 Racer</title>
-    <!-- PWA Theme Color -->
     <meta name="theme-color" content="#111827"/>
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,
+    {
+        %22name%22%3A%20%22Arcade%20F1%20Racer%22%2C
+        %22short_name%22%3A%20%22F1%20Racer%22%2C
+        %22start_url%22%3A%20%22.%22%2C
+        %22display%22%3A%20%22fullscreen%22%2C
+        %22background_color%22%3A%20%22%23111827%22%2C
+        %22theme_color%22%3A%20%22%23111827%22%2C
+        %22description%22%3A%20%22A%20top-down%20F1%20racing%20game.%22%2C
+        %22icons%22%3A%20[
+            {%22src%22%3A%20%22icon-192.png%22%2C%22sizes%22%3A%20%22192x192%22%2C%22type%22%3A%20%22image/png%22}%2C
+            {%22src%22%3A%20%22icon-512.png%22%2C%22sizes%22%3A%20%22512x512%22%2C%22type%22%3A%20%22image/png%22}
+        ]
+    }">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -142,28 +156,23 @@
 <body class="bg-gray-900 text-white overflow-hidden">
 
     <div id="gameUI" class="w-full h-screen flex items-center justify-center p-4">
-        <!-- Main Menu -->
         <div id="mainMenu" class="text-center">
             <h1 class="text-5xl sm:text-6xl font-bold tracking-widest mb-4 text-red-500">ARCADE F1</h1>
             <p class="text-lg sm:text-xl mb-8 text-gray-300">Top-Down Racing</p>
             <button id="startRaceBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 sm:py-4 sm:px-8 rounded-lg text-xl sm:text-2xl shadow-lg transition-transform transform hover:scale-105">Start Race</button>
         </div>
 
-        <!-- Team Selection -->
         <div id="teamSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-start overflow-y-auto">
             <h2 class="text-3xl sm:text-4xl font-bold my-4 sm:my-8 flex-shrink-0">Choose Your Team</h2>
             <div id="teamGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-6xl">
-                <!-- Team cards will be injected here by JS -->
-            </div>
+                </div>
             <button id="confirmTeamBtn" class="mt-6 sm:mt-8 mb-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed flex-shrink-0" disabled>Next</button>
         </div>
 
-        <!-- Track Selection -->
         <div id="trackSelection" class="hidden w-full h-full modal p-4 sm:p-8 flex flex-col items-center justify-start overflow-y-auto">
             <h2 class="text-3xl sm:text-4xl font-bold my-4 sm:my-6 flex-shrink-0">Select a Track</h2>
             <div id="trackGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-6xl">
-                 <!-- Track cards will be injected here by JS -->
-            </div>
+                 </div>
              <button id="confirmTrackBtn" class="mt-6 sm:mt-8 mb-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-10 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed flex-shrink-0" disabled>Race!</button>
         </div>
 
@@ -178,15 +187,13 @@
                     <div>Time: <span id="time">0.00</span></div>
                     <div>Lap: <span id="lap">1/15</span></div>
                     <div>Pos: <span id="position">1/6</span></div>
-                    <!-- Tire Wear HUD Element -->
                     <div class="mt-2">
                         <div class="w-48 h-6 bg-gray-700 rounded-full overflow-hidden border-2 border-gray-500">
                             <div id="tireWearBar" class="h-full bg-green-500 transition-all duration-100" style="width: 100%;"></div>
                         </div>
                     </div>
                 </div>
-                 <!-- Pause Menu -->
-                <div id="pauseMenu" class="hidden absolute inset-0 modal flex-col items-center justify-center text-center">
+                 <div id="pauseMenu" class="hidden absolute inset-0 modal flex-col items-center justify-center text-center">
                     <h2 id="pauseTitle" class="text-6xl font-bold mb-8">PAUSED</h2>
                     <div id="pauseActions" class="flex flex-col gap-4">
                         <button id="resumeBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-12 rounded-lg text-2xl">Resume</button>
@@ -221,13 +228,59 @@
         </div>
         <div id="settingsBar" class="absolute top-0 right-0 p-2 z-50 flex gap-2">
             <button id="pauseBtn" class="bg-gray-700 p-2 rounded-md hover:bg-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1 -1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/></svg>
             </button>
         </div>
     </div>
 
-
     <script>
+        // --- PWA Service Worker Registration (Embedded) ---
+        if ('serviceWorker' in navigator) {
+            const swContent = `
+                const CACHE_NAME = 'f1-racer-cache-v1';
+                const urlsToCache = [
+                    '/',
+                    '/index.html',
+                    'https://cdn.tailwindcss.com',
+                    'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap'
+                ];
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                        .then(cache => {
+                            console.log('Opened cache');
+                            return cache.addAll(urlsToCache);
+                        })
+                    );
+                });
+
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        caches.match(event.request)
+                        .then(response => {
+                            if (response) {
+                                return response;
+                            }
+                            return fetch(event.request);
+                        })
+                    );
+                });
+            `;
+            const swBlob = new Blob([swContent], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swUrl).then(registration => {
+                    console.log('Embedded ServiceWorker registration successful with scope: ', registration.scope);
+                }, err => {
+                    console.log('Embedded ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+
+
+        // --- UI and Game Logic ---
         const gameUI = document.getElementById('gameUI');
         const mainMenu = document.getElementById('mainMenu');
         const teamSelection = document.getElementById('teamSelection');
@@ -254,7 +307,6 @@
         const restartRaceBtn = document.getElementById('restartRaceBtn');
         const exitMenuBtn = document.getElementById('exitMenuBtn');
 
-        // New control editing elements
         const editControlsBtnPause = document.getElementById('editControlsBtnPause');
         const doneEditingBtn = document.getElementById('doneEditingBtn');
         const resetControlsBtn = document.getElementById('resetControlsBtn');
@@ -290,15 +342,10 @@
         ];
 
         const tracks = [
-            // --- Monza (Start/Finish on main straight) ---
             { id: 'monza', name: 'Monza', grassColor: '#4A6A4A', trackColor: '#555555', kerbColor: '#D3D3D3', path: [ {x:938,y:844}, {x:1500,y:844}, {x:1594,y:750}, {x:1594,y:281}, {x:1500,y:188}, {x:1313,y:188}, {x:1125,y:281}, {x:938,y:188}, {x:750,y:281}, {x:375,y:281}, {x:281,y:375}, {x:281,y:656}, {x:938,y:844} ], pitLanePath: [ {x: 1450, y: 919}, {x: 1420, y: 980}, {x: 1010, y: 980}, {x: 980, y: 919} ], pitBoxCenter: {x: 1215, y: 980} },
-            // --- Silverstone (Start/Finish on Hangar Straight) ---
             { id: 'silverstone', name: 'Silverstone', grassColor: '#557555', trackColor: '#606060', kerbColor: '#E0E0E0', path: [ {x:938,y:375}, {x:938,y:563}, {x:750,y:750}, {x:469,y:750}, {x:375,y:938}, {x:750,y:938}, {x:1125,y:938}, {x:1406,y:844}, {x:1406,y:656}, {x:1313,y:281}, {x:1031,y:281}, {x:938,y:375} ], pitLanePath: [ {x: 1406, y: 700}, {x: 1500, y: 720}, {x: 1500, y: 820}, {x: 1406, y: 844} ], pitBoxCenter: {x: 1500, y: 770} },
-            // --- Spa (Start/Finish on Kemmel Straight) ---
             { id: 'spa', name: 'Spa', grassColor: '#3E5E3E', trackColor: '#4C4C4C', kerbColor: '#C8C8C8', path: [ {x:1250,y:188}, {x:1500,y:188}, {x:1688,y:375}, {x:1688,y:563}, {x:1500,y:938}, {x:938,y:938}, {x:844,y:844}, {x:844,y:656}, {x:750,y:563}, {x:469,y:563}, {x:375,y:469}, {x:375,y:281}, {x:938,y:281}, {x:1250,y:188} ], pitLanePath: [ {x: 1500, y: 850}, {x: 1470, y: 980}, {x: 1000, y: 980}, {x: 968, y: 850} ], pitBoxCenter: {x: 1235, y: 980} },
-            // --- Suzuka (Start/Finish on main straight) ---
             { id: 'suzuka', name: 'Suzuka', grassColor: '#4F6F4F', trackColor: '#5A5A5A', kerbColor: '#DBDBDB', path: [ {x:1000,y:563}, {x:844,y:563}, {x:750,y:656}, {x:844,y:750}, {x:750,y:844}, {x:281,y:844}, {x:281,y:656}, {x:469,y:563}, {x:375,y:469}, {x:375,y:281}, {x:469,y:188}, {x:844,y:188}, {x:938,y:281}, {x:1406,y:281}, {x:1500,y:469}, {x:1406,y:656}, {x:1000,y:563} ], pitLanePath: [ {x: 300, y: 300}, {x: 240, y: 325}, {x: 240, y: 425}, {x: 300, y: 450} ], pitBoxCenter: {x: 240, y: 375} },
-            // --- Bahrain (Start/Finish on main straight) ---
             { id: 'bahrain', name: 'Bahrain', grassColor: '#A99572', trackColor: '#686868', kerbColor: '#F0F0F0', path: [ {x:938,y:844}, {x:1500,y:844}, {x:1594,y:750}, {x:1594,y:656}, {x:1500,y:563}, {x:1031,y:188}, {x:750,y:188}, {x:656,y:281}, {x:563,y:281}, {x:469,y:375}, {x:469,y:656}, {x:375,y:750}, {x:938,y:844} ], pitLanePath: [ {x: 800, y: 919}, {x: 850, y: 980}, {x: 1400, y: 980}, {x: 1450, y: 919} ], pitBoxCenter: {x: 1125, y: 980} },
         ];
 
@@ -326,7 +373,21 @@
         const totalLaps = 15;
         let checkpoints = [];
         
-        // --- UI INITIALIZATION ---
+        // --- UI INITIALIZATION & EVENT LISTENERS ---
+        startRaceBtn.addEventListener('click', () => {
+            mainMenu.style.display = 'none';
+            teamSelection.classList.remove('hidden');
+        });
+
+        confirmTeamBtn.addEventListener('click', () => {
+            teamSelection.classList.add('hidden');
+            trackSelection.classList.remove('hidden');
+        });
+
+        confirmTrackBtn.addEventListener('click', () => {
+            startGame();
+        });
+
         function populateTeamSelection() {
             teamGrid.innerHTML = teams.map(t => {
                 const statValue = (val, max) => Math.max(0, Math.min(max, Math.round(val)));
@@ -341,4 +402,54 @@
                     <h3 class="text-2xl font-bold text-center mb-2">${t.name}</h3>
                     <div class="text-sm">
                         <p>Top Speed: <span class="font-bold float-right">${'█'.repeat(topSpeedStat)}${'░'.repeat(10 - topSpeedStat)}</span></p>
-                        <p>Acceleration: <span class="font-bold float-right">${'█'.repeat(accelerationStat)}${'
+                        <p>Acceleration: <span class="font-bold float-right">${'█'.repeat(accelerationStat)}${'░'.repeat(10 - accelerationStat)}</span></p>
+                        <p>Handling: <span class="font-bold float-right">${'█'.repeat(handlingStat)}${'░'.repeat(10 - handlingStat)}</span></p>
+                        <p>Braking: <span class="font-bold float-right">${'█'.repeat(brakingStat)}${'░'.repeat(10 - brakingStat)}</span></p>
+                        <p>Tire Care: <span class="font-bold float-right">${'█'.repeat(tireCareStat)}${'░'.repeat(10 - tireCareStat)}</span></p>
+                    </div>
+                </div>
+                `
+            }).join('');
+            
+            document.querySelectorAll('.team-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.team-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    selectedTeam = teams.find(t => t.id === card.dataset.teamId);
+                    confirmTeamBtn.disabled = false;
+                });
+            });
+        }
+        
+        function populateTrackSelection() {
+            trackGrid.innerHTML = tracks.map(t => `
+                <div class="track-card border-4 rounded-lg p-4 cursor-pointer bg-gray-800 border-gray-600" data-track-id="${t.id}">
+                    <h3 class="text-2xl font-bold text-center">${t.name}</h3>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.track-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.track-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    selectedTrack = tracks.find(t => t.id === card.dataset.trackId);
+                    confirmTrackBtn.disabled = false;
+                });
+            });
+        }
+
+        function startGame() {
+            gameUI.style.display = 'none';
+            gameArea.classList.remove('hidden');
+            gameState = 'RACING';
+            // TODO: Add the rest of the game initialization logic here
+            console.log('Game started with Team:', selectedTeam.name, 'on Track:', selectedTrack.name);
+        }
+
+        // Initialize the UI
+        populateTeamSelection();
+        populateTrackSelection();
+
+    </script>
+</body>
+</html>
