@@ -358,11 +358,7 @@
             steer: 0,
             stats: { ...teams[0].stats }, // Default stats
             inputs: { accelerate: false, brake: false, left: false, right: false },
-            img: new Image(),
             tireWear: 100,
-            inPitLane: false,
-            isPitting: false,
-            justExitedPit: false,
             lap: 1,
             currentCheckpoint: 0,
         };
@@ -437,18 +433,187 @@
                 });
             });
         }
+        
+        // --- NEW GAME LOGIC ---
+
+        function setupInputListeners() {
+            const controls = {
+                'steer-left': 'left', 'steer-right': 'right',
+                'accelerate': 'accelerate', 'brake': 'brake'
+            };
+
+            for (const [id, input] of Object.entries(controls)) {
+                const btn = document.getElementById(id);
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); car.inputs[input] = true; }, { passive: false });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); car.inputs[input] = false; }, { passive: false });
+                btn.addEventListener('mousedown', (e) => { e.preventDefault(); car.inputs[input] = true; });
+                btn.addEventListener('mouseup', (e) => { e.preventDefault(); car.inputs[input] = false; });
+                btn.addEventListener('mouseleave', (e) => { car.inputs[input] = false; });
+            }
+
+            const keyMap = {
+                'ArrowUp': 'accelerate', 'w': 'accelerate',
+                'ArrowDown': 'brake', 's': 'brake',
+                'ArrowLeft': 'left', 'a': 'left',
+                'ArrowRight': 'right', 'd': 'right'
+            };
+
+            window.addEventListener('keydown', (e) => {
+                if (keyMap[e.key]) car.inputs[keyMap[e.key]] = true;
+            });
+            window.addEventListener('keyup', (e) => {
+                if (keyMap[e.key]) car.inputs[keyMap[e.key]] = false;
+            });
+        }
+
+        function resizeCanvas() {
+            const canvasWrapper = document.querySelector('.canvas-wrapper');
+            canvas.width = canvasWrapper.clientWidth;
+            canvas.height = canvasWrapper.clientHeight;
+        }
 
         function startGame() {
             gameUI.style.display = 'none';
             gameArea.classList.remove('hidden');
+            resizeCanvas();
+            
+            // Reset game state
             gameState = 'RACING';
-            // TODO: Add the rest of the game initialization logic here
-            console.log('Game started with Team:', selectedTeam.name, 'on Track:', selectedTrack.name);
+            raceTimer = 0;
+            car.lap = 1;
+            car.tireWear = 100;
+            car.speed = 0;
+            car.stats = { ...selectedTeam.stats };
+
+            // Position car at the start line
+            const startNode = selectedTrack.path[0];
+            const nextNode = selectedTrack.path[1];
+            car.x = startNode.x;
+            car.y = startNode.y + 20; // Start slightly offset for a grid-like start
+            car.angle = Math.atan2(nextNode.x - startNode.x, startNode.y - nextNode.y);
+
+            lastTime = performance.now();
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(gameLoop);
         }
 
-        // Initialize the UI
+        function updatePlayerCar(dt) {
+            // Steering
+            car.steer = 0;
+            if (car.inputs.left) car.steer = -car.stats.handling;
+            if (car.inputs.right) car.steer = car.stats.handling;
+            
+            // Drifting effect: reduce steering at high speeds
+            const grip = 1 - (car.speed / (car.stats.topSpeed * 1.5));
+            car.angle += car.steer * car.speed * grip;
+
+            // Acceleration and Braking
+            if (car.inputs.accelerate) {
+                car.speed += car.stats.acceleration;
+            } else if (car.inputs.brake) {
+                car.speed -= car.stats.braking;
+            } else {
+                // Natural deceleration (friction)
+                car.speed *= 0.98;
+            }
+
+            // Clamp speed
+            car.speed = Math.max(0, Math.min(car.speed, car.stats.topSpeed));
+            
+            // Update position
+            car.x += car.speed * Math.sin(car.angle);
+            car.y -= car.speed * Math.cos(car.angle);
+        }
+
+        function drawTrack() {
+            const trackWidth = 80;
+            const kerbWidth = 6;
+            
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Draw Grass
+            ctx.fillStyle = selectedTrack.grassColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Kerbs
+            ctx.strokeStyle = selectedTrack.kerbColor;
+            ctx.lineWidth = trackWidth + kerbWidth;
+            ctx.beginPath();
+            ctx.moveTo(selectedTrack.path[0].x, selectedTrack.path[0].y);
+            for (let i = 1; i < selectedTrack.path.length; i++) {
+                ctx.lineTo(selectedTrack.path[i].x, selectedTrack.path[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw Track
+            ctx.strokeStyle = selectedTrack.trackColor;
+            ctx.lineWidth = trackWidth;
+            ctx.beginPath();
+            ctx.moveTo(selectedTrack.path[0].x, selectedTrack.path[0].y);
+            for (let i = 1; i < selectedTrack.path.length; i++) {
+                ctx.lineTo(selectedTrack.path[i].x, selectedTrack.path[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+        
+        function drawCar(carToDraw) {
+            ctx.save();
+            ctx.translate(carToDraw.x, carToDraw.y);
+            ctx.rotate(carToDraw.angle);
+            
+            // Car Body
+            ctx.fillStyle = selectedTeam.color;
+            ctx.fillRect(-carToDraw.width / 2, -carToDraw.height / 2, carToDraw.width, carToDraw.height);
+
+            // Cockpit
+            ctx.fillStyle = 'black';
+            ctx.fillRect(-carToDraw.width / 2 + 2, -5, carToDraw.width - 4, 8);
+
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.save();
+
+            // Center camera on the player's car
+            ctx.translate(canvas.width / 2 - car.x, canvas.height / 2 - car.y);
+            
+            drawTrack();
+            drawCar(car);
+            // TODO: Draw AI cars
+
+            ctx.restore();
+        }
+
+        function gameLoop(timestamp) {
+            if (gameState !== 'RACING') return;
+
+            const deltaTime = (timestamp - lastTime) / 16.67; // Normalize to 60fps
+            lastTime = timestamp;
+            
+            raceTimer += deltaTime / 60;
+
+            updatePlayerCar(deltaTime);
+            // TODO: updateAICars(deltaTime);
+            
+            draw();
+
+            // Update HUD
+            hud.time.textContent = raceTimer.toFixed(2);
+            hud.lap.textContent = `${car.lap}/${totalLaps}`;
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+
+        // Initialize the app
+        window.addEventListener('resize', resizeCanvas);
         populateTeamSelection();
         populateTrackSelection();
+        setupInputListeners();
 
     </script>
 </body>
